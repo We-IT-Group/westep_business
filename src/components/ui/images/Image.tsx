@@ -1,32 +1,23 @@
-import {useEffect, useState} from "react";
-import {useGetFileById} from "../../../api/file/useFile.ts";
+import {useState} from "react";
 import {EditIcon, More, TrashBinIcon} from "../../../icons";
+import {baseUrlImage} from "../../../api/apiClient.ts";
 
 
 interface Props {
-    id: string | null,
+    imageUrl: string,
     openDeleteModal: () => void,
     setOpenEdit: () => void,
 }
 
-function Image({id, openDeleteModal, setOpenEdit}: Props) {
+function Image({imageUrl, openDeleteModal, setOpenEdit}: Props) {
 
     const [open, setOpen] = useState(false);
 
-    const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-    const {data} = useGetFileById(id as string);
-
-    useEffect(() => {
-        if (data) {
-            const blob = new Blob([data], {type: data.type || "image/svg+xml"});
-            setPreviewUrl(URL.createObjectURL(blob));
-        }
-    }, [data]);
 
     return (
-        <div className="w-full h-[190px] relative">
+        <div className="w-full h-[180px] relative">
             {
-                previewUrl && <img
+                imageUrl && <img
                     style={{
                         width: "100%",
                         height: "100%",
@@ -34,8 +25,8 @@ function Image({id, openDeleteModal, setOpenEdit}: Props) {
                         objectPosition: 'center'
                     }}
                     loading='lazy'
-                    src={previewUrl}
-                    alt={id as string}
+                    src={baseUrlImage + imageUrl}
+                    alt={imageUrl as string}
                 />
             }
             <div className={'absolute top-2 right-2'}>

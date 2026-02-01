@@ -1,25 +1,18 @@
-import {SidebarProvider, useSidebar} from "../context/SidebarContext";
+import {SidebarProvider} from "../context/SidebarContext";
 import {Outlet, useLocation} from "react-router";
 import AppHeader from "./AppHeader";
 import MobileNavigation from "./MobileNavigation.tsx";
 
 const LayoutContent: React.FC = () => {
-    const {isExpanded, isHovered, isMobileOpen} = useSidebar();
     const location = useLocation();
 
     return (
-        <div className="min-h-screen">
-            {/*<div>*/}
-            {/*  <AppSidebar />*/}
-            {/*  <Backdrop />*/}
-            {/*</div>*/}
+        <div className="min-h-screen overflow-hidden">
             <div
-                className={`flex-1 transition-all max-w-(--breakpoint-2xl) mx-auto  duration-300 ease-in-out ${
-                    isExpanded || isHovered ? "" : ""
-                } ${isMobileOpen ? "ml-0" : ""}`}
+                className={`max-w-(--breakpoint-2xl) m-auto h-full`}
             >
                 <AppHeader/>
-                <div className="bg-white h-[calc(100vh-64px)]">
+                <div className="bg-white h-[calc(100vh-100px)] p-0 m-0">
                     <Outlet/>
                 </div>
             </div>

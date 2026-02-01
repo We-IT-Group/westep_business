@@ -34,7 +34,8 @@ export interface Course extends Common {
     isPublished: boolean,
     publishedAt: string,
     businessId: string
-    attachmentId: string | null
+    attachmentId?: string | null,
+    attachmentUrl?: string,
 }
 
 export interface Module extends Common {
@@ -42,6 +43,7 @@ export interface Module extends Common {
     description?: string,
     courseId: string
     orderIndex: number | null,
+    price: number | null,
 }
 
 export interface Lesson extends Common {
@@ -50,5 +52,5 @@ export interface Lesson extends Common {
     moduleId: string,
     orderIndex: number | null,
     estimatedDuration: number | null,
-    videoUrl?:string,
+    videoUrl?: string,
 }

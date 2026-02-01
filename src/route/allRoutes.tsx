@@ -11,8 +11,6 @@ import FormElements from "../pages/Forms/FormElements.tsx";
 import CreatePassword from "../pages/AuthPages/CreatePassword.tsx";
 import ResetPassword from "../pages/AuthPages/ResetPassword.tsx";
 import Courses from "../pages/Courses/Courses.tsx";
-import Modules from "../pages/Modules/Modules.tsx";
-import AddModule from "../pages/Modules/AddModule.tsx";
 import Users from "../pages/Users/Users.tsx";
 import AddUsers from "../pages/Users/AddUsers.tsx";
 import MainPage from "../pages/MainPage";
@@ -29,9 +27,6 @@ export const authProtectedRoutes = [
     {path: "/courses/addLesson/:id", element: <AddLesson/>},
     {path: "/courses/updateLesson/:id/lesson/:lessonId", element: <AddLesson/>},
     {path: "/courses", element: <Courses/>},
-    {path: "/modules/update/:id", element: <AddModule/>},
-    {path: "/modules/add", element: <AddModule/>},
-    {path: "/modules", element: <Modules/>},
     // {path: "/courses/update/:courseId/:id", element: <AddLesson/>},
     // {path: "/courses/add", element: <AddLesson/>},
     {path: "/users/update/:id", element: <AddUsers/>},

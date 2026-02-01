@@ -35,7 +35,7 @@ function ModuleCard({module}: { module: Module }) {
                     }} width={18} height={18} className='text-gray-400  cursor-pointer'/>
                 </div>
                 <div className={'flex items-center justify-between mt-[8px]'}>
-                    <h4 className={'text-sm leading-normal font-normal break-all w-[80%]  '}>{module.description}</h4>
+                    <h4 className={'text-sm text-blue-light-500 leading-normal font-normal break-all w-[80%]  '}>{module.price?.toLocaleString().replace(',', '.')} so'm</h4>
                     <EditIcon onClick={(e) => {
                         e.stopPropagation()
                         setOpenEdit(!openEdit)

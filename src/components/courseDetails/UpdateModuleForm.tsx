@@ -18,10 +18,11 @@ function UpdateModuleForm({courseId, open, setOpen, module}: propTypes) {
 
     const {mutateAsync: updateModule, isPending: isAdding} = useUpdateModule();
 
-    const [initialValues, setInitialValues] = useState<Pick<Module, "name" | "description" | "courseId" | "orderIndex">>({
+    const [initialValues, setInitialValues] = useState<Pick<Module, "name" | "description" | "courseId" | "orderIndex" | "price">>({
         name: "",
         description: "",
         courseId: courseId,
+        price: 0,
         orderIndex: 0
     });
 
@@ -32,6 +33,7 @@ function UpdateModuleForm({courseId, open, setOpen, module}: propTypes) {
                 name: module.name,
                 description: module.description,
                 courseId: module.courseId,
+                price: module.price,
                 orderIndex: module.orderIndex
             })
         }
@@ -44,15 +46,16 @@ function UpdateModuleForm({courseId, open, setOpen, module}: propTypes) {
         validationSchema: Yup.object().shape({
             name: Yup.string()
                 .required("Nomini kiriting!"),
+            price: Yup.string()
+                .required("Narxini kiriting!"),
             orderIndex: Yup.number().required("Module navbatini tanlang!"),
         }),
         onSubmit: async () => {
-            await updateModule({...formik.values, id:module.id});
+            await updateModule({...formik.values, id: module.id});
             formik.resetForm();
             setOpen(false);
         },
     });
-
 
 
     return (
@@ -76,10 +79,9 @@ function UpdateModuleForm({courseId, open, setOpen, module}: propTypes) {
             >
                 <div className="grid grid-cols-1 gap-1">
                     <NewInput type="text" formik={formik} name="name" placeholder="Module nomi"/>
+                    <NewInput type="text" formik={formik} name="price" placeholder="Module narxi"/>
                     <NewInput type="text" className={'text-xs'} formik={formik} name="description"
                               placeholder="Tavsif"/>
-                    <NewInput type="number" className={'text-xs'} formik={formik} name="orderIndex"
-                              placeholder="Module navbati"/>
                 </div>
 
                 <div className="mt-3 flex gap-6 justify-end">

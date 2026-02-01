@@ -14,9 +14,10 @@ function AddModule({courseId, modulesLength}: { courseId: string | undefined, mo
 
     const {mutateAsync: addModule, isPending: isAdding} = useAddModule();
 
-    const [initialValues] = useState<Pick<Module, "name" | "description" | "courseId">>({
+    const [initialValues] = useState<Pick<Module, "name" | "description" | "courseId" |"price">>({
         name: "",
         description: "",
+        price:null,
         courseId: courseId || "",
     });
 
@@ -27,6 +28,8 @@ function AddModule({courseId, modulesLength}: { courseId: string | undefined, mo
         validationSchema: Yup.object().shape({
             name: Yup.string()
                 .required("Nomini kiriting!"),
+            price: Yup.string()
+                .required("Narxini kiriting!"),
         }),
         onSubmit: async () => {
             await addModule({...formik.values,orderIndex:modulesLength+1});
@@ -64,6 +67,7 @@ function AddModule({courseId, modulesLength}: { courseId: string | undefined, mo
                 >
                     <div className="grid grid-cols-1 gap-1">
                         <NewInput type="text" formik={formik} name="name" placeholder="Module nomi"/>
+                        <NewInput type="text" formik={formik} name="price" placeholder="Module narxi"/>
                         <NewInput type="text" className={'text-xs'} formik={formik} name="description"
                                   placeholder="Tavsif"/>
                     </div>

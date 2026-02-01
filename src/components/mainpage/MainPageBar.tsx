@@ -62,7 +62,10 @@ function MainPageBar() {
                             <div
                                 className="w-full relative bg-transparent border border-gray-100 rounded-full h-[10px]">
                                 <div
-                                    className={`bg-blue-600 h-[10px]  ${item.percent === 100 ? 'rounded-full' : "rounded-l-lg "}  w-[${item.percent}%]`}
+                                    className={`bg-blue-600 h-[10px]  ${item.percent === 100 ? 'rounded-full' : "rounded-l-lg "}`}
+                                    style={{
+                                        width: `${item.percent}%`
+                                    }}
                                 >
                                 </div>
                                 <p className={`text-center absolute top-0 left-1/2 text-[9px] leading-[10px] m-0 p-0 ${item.percent > 50 ? "text-white" : "text-blue-600"}  `}>30%</p>
@@ -83,7 +86,7 @@ function MainPageBar() {
                     {
                         weeks.map((item, index) =>
                             <div key={index}
-                                className={`w-[36px] h-[36px] flex justify-center items-center 
+                                 className={`w-[36px] h-[36px] flex justify-center items-center 
                                 border border-blue-300 rounded-md ${item.active ? "bg-blue-100" : 'bg-transparent'}`}>
                                 {
                                     item.active ?

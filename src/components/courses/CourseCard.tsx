@@ -31,8 +31,8 @@ function CourseCard({course}: { course: Course }) {
                 openEdit ? <UpdateCourse data={course} setOpenEdit={handleOpenEdit}/>
                     :
                     <div className={'border border-blue-200 rounded-3xl overflow-hidden h-full flex flex-col'}>
-                        <div className="w-full h-[190px]">
-                            <Image id={course.attachmentId} openDeleteModal={openDeleteModal}
+                        <div className="w-full h-[180px]">
+                            <Image imageUrl={course.attachmentUrl as string} openDeleteModal={openDeleteModal}
                                    setOpenEdit={handleOpenEdit}/>
                         </div>
                         <div className={'p-4 flex flex-col justify-between flex-1'}>
