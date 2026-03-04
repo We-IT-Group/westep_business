@@ -1,6 +1,6 @@
 import {useCallback, useEffect, useRef, useState} from "react";
 import {Link, useLocation} from "react-router";
-import logo from "../assets/logo.svg"
+import logo from "../assets/westep_dark_logo.png"
 // Assume these icons are imported from an icon library
 import {
     BoxCubeIcon,

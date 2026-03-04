@@ -3,7 +3,7 @@ import * as Yup from "yup";
 import PhoneNumberInput from "../../components/form/PhoneNumberInput.tsx";
 import CommonButton from "../ui/button/AuthButton.tsx";
 import {useCheckPhoneNumber} from "../../api/auth/useAuth.ts";
-import logo from "../../assets/logo.svg";
+import logo from "../../assets/westep_dark_logo.png";
 
 export default function LoginForm() {
     const {mutateAsync, isPending} = useCheckPhoneNumber();

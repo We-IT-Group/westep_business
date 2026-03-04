@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from "react";
 import UserDropdown from "../components/header/UserDropdown";
-import logo from "../assets/logo.svg";
+import logo from "../assets/westep_dark_logo.png";
 import {Link} from "react-router";
 
 const AppHeader: React.FC = () => {
