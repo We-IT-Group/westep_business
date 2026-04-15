@@ -1,8 +1,8 @@
 // src/api/filesApi.ts
 import apiClient from "../apiClient";
 import {getItem, setItem} from "../../utils/utils.ts";
-import {AxiosError} from "axios";
 import {BusinessType} from "../../types/types.ts";
+import {parseApiError} from "../../utils/apiError.ts";
 
 
 export const login = async (body: { phone: string; password: string }) => {
@@ -16,9 +16,8 @@ export const login = async (body: { phone: string; password: string }) => {
         setItem<string>("accessToken", data?.accessToken)
         setItem<string>("refreshToken", data?.refreshToken)
         return data
-    } catch (error:any) {
-        const message = "Parol notog'ri kiritildi";
-        throw new Error(message);
+    } catch (error) {
+        throw parseApiError(error, "Login amalga oshmadi.");
     }
 };
 
@@ -27,10 +26,7 @@ export const register = async (body: BusinessType) => {
         const response = await apiClient.post("/business/register", body);
         return response;
     } catch (error) {
-        console.log(error);
-        const err = error as AxiosError<{ message: string }>;
-        const message = err.response?.data?.message;
-        throw new Error(message);
+        throw parseApiError(error, "Ro'yxatdan o'tib bo'lmadi.");
     }
 };
 
@@ -65,9 +61,7 @@ export const sendOtpCode = async (body: { phoneNumber: string, type: string }) =
             type: body.type,
         });
     } catch (error) {
-        const err = error as AxiosError<{ message: string }>;
-        const message = err.response?.data?.message;
-        throw new Error(message);
+        throw parseApiError(error, "SMS kod yuborilmadi.");
     }
 };
 export const verifyCode = async (body: { phoneNumber: string, code: string, type: string }) => {
@@ -78,9 +72,7 @@ export const verifyCode = async (body: { phoneNumber: string, code: string, type
             type: body.type,
         });
     } catch (error) {
-        const err = error as AxiosError<{ message: string }>;
-        const message = err.response?.data?.message;
-        throw new Error(message);
+        throw parseApiError(error, "Kod tasdiqlanmadi.");
     }
 };
 export const resetPassword = async (body: { phoneNumber: string, password: string }) => {
@@ -92,8 +84,6 @@ export const resetPassword = async (body: { phoneNumber: string, password: strin
             }
         });
     } catch (error) {
-        const err = error as AxiosError<{ message: string }>;
-        const message = err.response?.data?.message;
-        throw new Error(message);
+        throw parseApiError(error, "Parol yangilanmadi.");
     }
 };

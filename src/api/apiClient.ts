@@ -1,10 +1,13 @@
 import axios from "axios";
-import {getItem, removeItem, setItem} from "../utils/utils.ts";
+import { getItem, removeItem, setItem } from "../utils/utils.ts";
 
 
-// export const baseUrl = "http://185.217.131.134:8080/api"
-export const baseUrl = "https://westep.uz/api"
-export const baseUrlImage = "https://westep.uz"
+export const baseUrl = "http://192.168.1.237:8080/api"
+export const baseUrlImage = "http://192.168.1.237:8080/api"
+export const apiBaseOrigin = baseUrl.replace(/\/api$/, "");
+
+// export const baseUrl = "https://westep.uz/api"
+// export const baseUrlImage = "https://westep.uz"
 
 const apiClient = axios.create({
     baseURL: baseUrl,
@@ -31,8 +34,9 @@ apiClient.interceptors.response.use(
             if (!refreshToken) return Promise.reject(error);
 
             try {
-                const {data} = await axios.post(`${baseUrl}/auth/refresh`, {}, {
-                    params: {refreshToken: refreshToken},
+                const { data } = await axios.post(`${baseUrl}/auth/refresh`, {}, {
+                    params: { refreshToken: refreshToken },
+                    withCredentials: true,
                 });
 
                 setItem<string>("accessToken", data.accessToken);

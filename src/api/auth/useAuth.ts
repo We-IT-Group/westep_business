@@ -12,6 +12,7 @@ import {
 import {useNavigate} from "react-router";
 import {getItem} from "../../utils/utils.ts";
 import {useToast} from "../../hooks/useToast.tsx";
+import {showErrorToast} from "../../utils/toast.tsx";
 
 export const useUser = () =>
     useQuery({
@@ -51,7 +52,7 @@ export const useRegister = () => {
             sessionStorage.removeItem("form");
         },
         onError: (error) => {
-            alert(error.message);
+            showErrorToast(error, "Ro'yxatdan o'tib bo'lmadi");
         }
     });
 };
@@ -138,4 +139,3 @@ export const useResetPassword = () => {
         },
     });
 };
-

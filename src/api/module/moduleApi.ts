@@ -2,7 +2,7 @@ import apiClient from "../apiClient.ts";
 import {AxiosError} from "axios";
 import {Module} from "../../types/types.ts";
 
-type addModule = Pick<Module, "name" | "description" | "courseId" | "id" | "orderIndex">
+type addModule = Pick<Module, "name" | "description" | "courseId" | "id" | "orderIndex" | "price">
 
 export const addModules = async (body: Omit<addModule, "id">) => {
     try {
@@ -26,7 +26,7 @@ export const updateModules = async (body: addModule) => {
     }
 };
 
-export const deleteModules = async (id:string) => {
+export const deleteModules = async (id: string) => {
     console.log('deleteModules', id);
     try {
         await apiClient.delete("/module/" + id);

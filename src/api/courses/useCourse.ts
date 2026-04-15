@@ -2,6 +2,7 @@ import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {getAllCourses, addCourses, updateCourse, deleteCourse, getCourseById} from "./courseApi.ts";
 import {useNavigate} from "react-router";
 import {getItem} from "../../utils/utils.ts";
+import {showErrorToast} from "../../utils/toast.tsx";
 
 export const useGetCourses = () =>
     useQuery({
@@ -34,10 +35,10 @@ export const useAddCourse = () => {
         onSuccess: async () => {
             const roles = await getAllCourses();
             qc.setQueryData(["courses"], roles);
-            navigate(0);
+            // navigate(0);
         },
         onError: (error) => {
-            alert(error);
+            showErrorToast(error, "Kurs qo'shib bo'lmadi");
         },
     });
 };
@@ -50,10 +51,10 @@ export const useUpdateCourse = () => {
         onSuccess: async () => {
             const roles = await getAllCourses();
             qc.setQueryData(["courses"], roles);
-            navigate("/");
+            navigate(0);
         },
         onError: (error) => {
-            alert(error);
+            showErrorToast(error, "Kursni yangilab bo'lmadi");
         },
     });
 };
@@ -69,8 +70,7 @@ export const useDeleteCourse = () => {
             navigate("/");
         },
         onError: (error) => {
-            alert(error);
+            showErrorToast(error, "Kursni o'chirib bo'lmadi");
         },
     });
 };
-

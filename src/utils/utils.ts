@@ -1,3 +1,10 @@
+import {clsx, type ClassValue} from "clsx";
+import {twMerge} from "tailwind-merge";
+
+export function cn(...inputs: ClassValue[]) {
+    return twMerge(clsx(inputs));
+}
+
 export const setItem = <T>(name: string, data: T): void => {
     localStorage.setItem(name, JSON.stringify(data));
 };
@@ -24,7 +31,7 @@ export function getSelectOptions<T extends Record<string, any>>(
     }));
 }
 
-export function formatUzPhone(number:string) {
+export function formatUzPhone(number: string) {
     // Faqat raqamlarni qoldiramiz
     const digits = number.replace(/\D/g, "");
 

@@ -3,7 +3,7 @@ import {DropdownItem} from "../ui/dropdown/DropdownItem";
 import {Dropdown} from "../ui/dropdown/Dropdown";
 import {Link} from "react-router";
 import {useUser} from "../../api/auth/useAuth.ts";
-import person from "../../assets/icon/person.svg"
+import {User} from "lucide-react";
 
 export default function UserDropdown() {
     const {data: user} = useUser();
@@ -19,35 +19,17 @@ export default function UserDropdown() {
 
     return (
         <div className="relative">
-            <button
-                onClick={toggleDropdown}
-                className="flex items-center text-gray-700 dropdown-toggle dark:text-gray-400"
-            >
-        <span className="mr-3 overflow-hidden rounded-full h-10 w-10">
-          <img src={person} alt="User"/>
-        </span>
-
-                {/*<span className="block mr-1 font-medium text-theme-sm">{user?.firstname}</span>*/}
-                {/*<svg*/}
-                {/*    className={`stroke-gray-500 dark:stroke-gray-400 transition-transform duration-200 ${*/}
-                {/*        isOpen ? "rotate-180" : ""*/}
-                {/*    }`}*/}
-                {/*    width="18"*/}
-                {/*    height="20"*/}
-                {/*    viewBox="0 0 18 20"*/}
-                {/*    fill="none"*/}
-                {/*    xmlns="http://www.w3.org/2000/svg"*/}
-                {/*>*/}
-                {/*    <path*/}
-                {/*        d="M4.3125 8.65625L9 13.3437L13.6875 8.65625"*/}
-                {/*        stroke="currentColor"*/}
-                {/*        strokeWidth="1.5"*/}
-                {/*        strokeLinecap="round"*/}
-                {/*        strokeLinejoin="round"*/}
-                {/*    />*/}
-                {/*</svg>*/}
+            <button onClick={toggleDropdown}
+                    className="flex items-center gap-3 p-2 hover:bg-gray-100 rounded-lg transition-colors">
+                <div className="w-8 h-8 bg-[#0B1F3A] rounded-full flex items-center justify-center">
+                    <User className="w-5 h-5 text-white"/>
+                </div>
+                <div className="text-left hidden sm:block">
+                    <div
+                        className="text-sm font-medium text-gray-900"> {user?.firstname || "John"} {user?.lastname || "Doe"}</div>
+                    <div className="text-xs text-gray-500">{user?.roleName || "Admin"}</div>
+                </div>
             </button>
-
             <Dropdown
                 isOpen={isOpen}
                 onClose={closeDropdown}

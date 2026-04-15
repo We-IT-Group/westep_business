@@ -1,6 +1,7 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {getModulesById, getAllModules, addModules, updateModules, deleteModules} from "./moduleApi.ts";
 import {getItem} from "../../utils/utils.ts";
+import {showErrorToast} from "../../utils/toast.tsx";
 
 export const useGetModules = (courseId: string | undefined) =>
     useQuery({
@@ -38,7 +39,7 @@ export const useAddModule = () => {
             });
         },
         onError: (error) => {
-            alert(error);
+            showErrorToast(error, "Modul qo'shib bo'lmadi");
         },
     });
 };
@@ -53,7 +54,7 @@ export const useUpdateModule = () => {
             });
         },
         onError: (error) => {
-            alert(error);
+            showErrorToast(error, "Modulni yangilab bo'lmadi");
         },
     });
 };
@@ -68,8 +69,7 @@ export const useDeleteModule = () => {
             });
         },
         onError: (error) => {
-            alert(error);
+            showErrorToast(error, "Modulni o'chirib bo'lmadi");
         },
     });
 };
-

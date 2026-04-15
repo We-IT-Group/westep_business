@@ -1,54 +1,95 @@
-import {Lesson} from "../../types/types.ts";
-import {EditIcon, TrashBinIcon} from "../../icons";
-import {Link} from "react-router";
 import {useState} from "react";
-import {useDeleteLesson} from "../../api/lessons/useLesson.ts";
+import {useParams} from "react-router";
+import {Trash2} from "lucide-react";
+import {Lesson} from "../../types/types.ts";
+import {useDeleteLesson, useUpdateLesson} from "../../api/lessons/useLesson.ts";
 import DeleteModal from "../common/DeleteModal.tsx";
 
-function LessonCard({lesson, courseId}: { lesson: Lesson, courseId: string }) {
+function LessonCard({lesson, courseId, onSelect}: {
+    lesson: Lesson,
+    courseId: string,
+    onSelect: (lessonId: string) => void
+}) {
+    // const {lessonId} = useParams<{ lessonId: string }>();
+    const params = useParams();
+    const {mutate, isPending} = useDeleteLesson(courseId, lesson.moduleId);
+    const {mutateAsync: updateLesson} = useUpdateLesson();
 
-
-    const {mutate,isPending} = useDeleteLesson()
 
     const [deleteModal, setDeleteModal] = useState(false);
+    const [title, setTitle] = useState(lesson.name);
+    const [isEditing, setIsEditing] = useState(false);
+
 
     const handleDelete = async () => {
-        await mutate(lesson.id)
-        setDeleteModal(false)
-    }
-
-    const openDeleteModal = () => {
-        setDeleteModal(true);
+        await mutate(lesson.id);
+        setDeleteModal(false);
     };
 
 
+    const handleDoubleClick = () => {
+        setIsEditing(true);
+    };
+
+    const handleBlur = async () => {
+        setIsEditing(false);
+        if (title.trim() && title !== lesson.name) {
+            await updateLesson({body: {...lesson, name: title}});
+        } else {
+            setTitle(lesson.name);
+        }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+        if (e.key === "Enter") {
+            handleBlur();
+        } else if (e.key === "Escape") {
+            setIsEditing(false);
+            setTitle(lesson.name);
+        }
+    };
+
+    console.log(params)
+
     return (
         <>
-            <div className={'border border-blue-200 bg-white rounded-[20px] p-[9px] py-[6px] overflow-hidden'}>
-                <div className={'flex items-center justify-between'}>
-                    <div className={'flex items-center gap-2 justify-start ms-[-14px]'}>
-                        <span className={'size-[14px] bg-blue-600 rounded-full'}></span>
-                        <p className={'text-sm leading-normal font-normal p-0 m-0  break-all w-[100%]'}>
-                            {lesson.name}
-                        </p>
-                    </div>
-
-                    <div className={'flex items-center gap-2 justify-between'}>
-                        <Link className={'hidden lg:block'} to={`/courses/details/${courseId}/updateLesson/${lesson.id}`}
-                              state={{moduleId: lesson.moduleId}}>
-                            <EditIcon width={16} height={16} className='text-gray-400'/>
-                        </Link>
-                        <Link className={'lg:hidden'}  to={`/courses/updateLesson/${courseId}/lesson/${lesson.id}`}
-                              state={{moduleId: lesson.moduleId}}>
-                            <EditIcon width={16} height={16} className='text-gray-400'/>
-                        </Link>
-                        <TrashBinIcon onClick={(e)=>{
-                            e.stopPropagation()
-                            openDeleteModal()
-                        }} width={16} height={16} className='text-gray-400 cursor-pointer'/>
-                    </div>
-                </div>
+            <div className={`group flex items-center gap-2 px-3 py-2.5 rounded-lg cursor-pointer transition-all ml-8 ${
+                params.lessonId === lesson.id
+                    ? "bg-blue-50 border-l-4 border-blue-500 shadow-sm"
+                    : "hover:bg-gray-50 border-l-4 border-transparent"
+            }`}
+                 onDoubleClick={handleDoubleClick}
+                 onClick={() => onSelect(lesson.id)}
+            >
+                {isEditing ? (
+                    <input
+                        type="text"
+                        value={title}
+                        onChange={(e) => setTitle(e.target.value)}
+                        onBlur={handleBlur}
+                        onKeyDown={handleKeyDown}
+                        className="flex-1 px-2 py-1 text-sm border border-blue-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        autoFocus
+                        onClick={(e) => e.stopPropagation()}
+                    />
+                ) : (
+                    <span
+                        className={`flex-1 text-sm ${params.lessonId ? "font-medium text-gray-900" : "text-gray-700"}`}>
+          {lesson.name}
+        </span>
+                )}
+                <span className="text-xs text-gray-400">{lesson.estimatedDuration || 0}m</span>
+                <button
+                    onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete()
+                    }}
+                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-50 rounded transition-all"
+                >
+                    <Trash2 className="w-3.5 h-3.5 text-red-500"/>
+                </button>
             </div>
+
             <DeleteModal
                 isPending={isPending}
                 setOpen={setDeleteModal}
@@ -56,7 +97,6 @@ function LessonCard({lesson, courseId}: { lesson: Lesson, courseId: string }) {
                 deleteFunction={handleDelete}
             />
         </>
-
     );
 }
 

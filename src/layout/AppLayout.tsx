@@ -1,25 +1,23 @@
 import {SidebarProvider} from "../context/SidebarContext";
-import {Outlet, useLocation} from "react-router";
+import {Outlet} from "react-router";
 import AppHeader from "./AppHeader";
-import MobileNavigation from "./MobileNavigation.tsx";
+import AppSidebar from "./AppSidebar";
+import Backdrop from "./Backdrop";
 
 const LayoutContent: React.FC = () => {
-    const location = useLocation();
-
     return (
-        <div className="min-h-screen overflow-hidden">
-            <div
-                className={`max-w-(--breakpoint-2xl) m-auto h-full`}
-            >
-                <AppHeader/>
-                <div className="bg-white h-[calc(100vh-100px)] p-0 m-0">
-                    <Outlet/>
+        <div className="min-h-screen bg-[#f7f9fc] text-slate-950">
+            <AppSidebar/>
+            <Backdrop/>
+
+            <div className="min-h-screen lg:pl-64">
+                <div className="mx-auto min-h-screen max-w-none">
+                    <AppHeader/>
+                    <main className="flex-1 overflow-y-auto">
+                        <Outlet/>
+                    </main>
                 </div>
             </div>
-            {
-                location.pathname === "/" && <MobileNavigation/>
-            }
-
         </div>
     );
 };

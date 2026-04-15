@@ -1,20 +1,18 @@
 import AddLesson from "./AddLesson.tsx";
-import {Route, Routes} from "react-router";
+import {Route, Routes} from "react-router-dom";
 
 function LessonDetails() {
     return (
-        <div>
-            <Routes>
-                <Route
-                    path={'updateLesson/:lessonId'}
-                    element={<AddLesson/>}
-                />
-                <Route
-                    path={'addLesson'}
-                    element={<AddLesson/>}
-                />
-            </Routes>
-        </div>
+        <Routes>
+            <Route
+                path={'updateLesson/:lessonId'}
+                element={<AddLesson/>}
+            />
+            <Route
+                path={'addLesson'}
+                element={<AddLesson/>}
+            />
+        </Routes>
     );
 }
 

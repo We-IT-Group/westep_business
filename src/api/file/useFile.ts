@@ -1,6 +1,7 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {addFile, deleteFile, getFileById} from "./filesApi.ts";
 import {getItem} from "../../utils/utils.ts";
+import {showErrorToast} from "../../utils/toast.tsx";
 
 
 export const useGetFileById = (id: string | undefined) =>
@@ -24,7 +25,7 @@ export const useAddFile = () => {
             qc.setQueryData(["fileId"], id);
         },
         onError: (error) => {
-            alert(error);
+            showErrorToast(error, "Fayl yuklab bo'lmadi");
         },
     });
 };
@@ -38,8 +39,7 @@ export const useDeleteFile = () => {
             qc.setQueryData(["file"], id);
         },
         onError: (error) => {
-            alert(error);
+            showErrorToast(error, "Faylni o'chirib bo'lmadi");
         },
     });
 };
-
