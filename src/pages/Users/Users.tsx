@@ -1,14 +1,25 @@
 import {useMemo, useState} from "react";
 import {useFormik} from "formik";
 import * as Yup from "yup";
-import {Trash2, UserPlus, UsersRound} from "lucide-react";
-import ComponentCard from "../../components/common/ComponentCard";
+import {
+    BriefcaseBusiness,
+    ShieldCheck,
+    Trash2,
+    UserPlus,
+    Users as UsersIcon,
+    UsersRound,
+} from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import Label from "../../components/form/Label.tsx";
 import Input from "../../components/form/input/InputField.tsx";
 import Select from "../../components/form/Select.tsx";
 import Button from "../../components/ui/button/Button.tsx";
-import {useAddBusinessAssistant, useAddBusinessTeacher, useDeleteAssistant, useGetUsers} from "../../api/businessUser/useBusinessUser.ts";
+import {
+    useAddBusinessAssistant,
+    useAddBusinessTeacher,
+    useDeleteAssistant,
+    useGetUsers,
+} from "../../api/businessUser/useBusinessUser.ts";
 import {useUser} from "../../api/auth/useAuth.ts";
 import type {BusinessMember, TeamRole} from "../../api/businessUser/businessUserApi.ts";
 
@@ -18,8 +29,8 @@ type AddTeamMemberForm = {
 };
 
 const roleOptions = [
-    {value: "TEACHER", label: "Teacher"},
-    {value: "ASSISTANT", label: "Assistant"},
+    {value: "TEACHER", label: "O‘qituvchi"},
+    {value: "ASSISTANT", label: "Assistent"},
 ];
 
 export default function Users() {
@@ -100,198 +111,234 @@ export default function Users() {
         });
     };
 
+    const workspaceCards = [
+        {
+            label: "Jamoa hajmi",
+            value: members.length,
+            hint: "Businessga biriktirilgan jami a'zolar",
+            tone: "from-sky-500/20 to-blue-500/10 text-sky-700",
+        },
+        {
+            label: "O‘qituvchilar",
+            value: teachersCount,
+            hint: "Course va review workflows",
+            tone: "from-emerald-500/20 to-teal-500/10 text-emerald-700",
+        },
+        {
+            label: "Assistentlar",
+            value: assistantsCount,
+            hint: "Support va operations layer",
+            tone: "from-violet-500/20 to-indigo-500/10 text-violet-700",
+        },
+    ];
+
     return (
-        <>
+        <div className="mx-auto max-w-[1560px] space-y-5 pb-10">
             <PageMeta
-                title="Team Management"
-                description="Teacher va assistantlarni boshqaring"
+                title="Jamoa oynasi"
+                description="Biznes admin uchun jamoa boshqaruv sahifasi."
             />
 
-            <div className="space-y-6">
-                <div className="flex flex-col gap-3 rounded-[28px] border border-slate-200 bg-white px-7 py-6 shadow-sm md:flex-row md:items-center md:justify-between">
-                    <div>
-                        <p className="text-sm font-medium uppercase tracking-[0.24em] text-slate-400">Business Admin</p>
-                        <h1 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-slate-950">Team Management</h1>
-                        <p className="mt-2 max-w-2xl text-sm text-slate-600">
-                            Mavjud userlarni teacher yoki assistant roliga biriktiring va business jamoangizni shu yerdan boshqaring.
+            <section className="grid grid-cols-1 gap-5 xl:grid-cols-[1.3fr_0.9fr]">
+                <div className="relative overflow-hidden rounded-[30px] border border-gray-100 bg-[radial-gradient(circle_at_top_left,rgba(96,165,250,0.18),transparent_34%),linear-gradient(135deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-6 text-slate-900 shadow-[0_24px_60px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,rgba(59,130,246,0.18),transparent_34%),linear-gradient(135deg,rgba(2,6,23,0.98),rgba(15,23,42,0.94))] dark:text-slate-100 dark:shadow-[0_24px_60px_rgba(2,6,23,0.45)] md:p-7">
+                    <div className="absolute -right-10 top-8 h-40 w-40 rounded-full bg-blue-100/70 blur-3xl dark:bg-blue-500/10" />
+                    <div className="absolute bottom-[-48px] left-[-28px] h-48 w-48 rounded-full bg-sky-100/70 blur-3xl dark:bg-sky-500/10" />
+
+                    <div className="relative">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-blue-50 px-4 py-2 text-[10px] font-semibold uppercase tracking-[0.2em] text-blue-700 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-200">
+                            <BriefcaseBusiness className="h-3.5 w-3.5" />
+                            Jamoa oynasi
+                        </div>
+
+                        <h1 className="mt-4 max-w-4xl text-3xl font-bold leading-[0.98] tracking-[-0.05em] md:text-[3rem]">
+                            Teacher va assistantlarni bitta operator console ichida boshqaring.
+                        </h1>
+
+                        <p className="mt-3 max-w-2xl text-sm leading-6 text-slate-500 dark:text-slate-300">
+                            Mavjud userlarni business workflow’ga biriktiring, role balansini kuzating va workspace ownershipni aniq boshqaring.
                         </p>
-                    </div>
-                    <div className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
-                        Query param flow: <span className="font-semibold text-slate-900">phone + ownerId + businessId</span>
+
+                        <div className="mt-7 grid grid-cols-1 gap-3 md:grid-cols-3">
+                            {workspaceCards.map((card) => (
+                                <div key={card.label} className="rounded-[20px] border border-gray-100 bg-white p-4 shadow-sm dark:border-slate-800 dark:bg-slate-900/70">
+                                    <div className={`inline-flex rounded-xl bg-gradient-to-br p-2.5 ${card.tone}`}>
+                                        <UsersIcon className="h-4.5 w-4.5" />
+                                    </div>
+                                    <div className="mt-3 text-2xl font-black tracking-[-0.04em] dark:text-slate-100">{card.value}</div>
+                                    <div className="mt-1 text-sm font-semibold text-slate-900 dark:text-slate-100">{card.label}</div>
+                                    <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{card.hint}</div>
+                                </div>
+                            ))}
+                        </div>
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-                    <ComponentCard
-                        title="Jamoa overview"
-                        desc="Business hisobingizga biriktirilgan a'zolar holati."
-                        className="xl:col-span-2"
-                    >
-                        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                            <div className="rounded-2xl border border-slate-200 bg-slate-50 px-5 py-4">
-                                <p className="text-sm text-slate-500">Jami a'zolar</p>
-                                <p className="mt-2 text-3xl font-semibold text-slate-900">{members.length}</p>
-                            </div>
-                            <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4">
-                                <p className="text-sm text-emerald-700">Teacherlar</p>
-                                <p className="mt-2 text-3xl font-semibold text-emerald-900">{teachersCount}</p>
-                            </div>
-                            <div className="rounded-2xl border border-blue-200 bg-blue-50 px-5 py-4">
-                                <p className="text-sm text-blue-700">Assistantlar</p>
-                                <p className="mt-2 text-3xl font-semibold text-blue-900">{assistantsCount}</p>
-                            </div>
-                        </div>
-                    </ComponentCard>
+                <div className="rounded-[26px] border border-white/60 bg-white/86 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/75 dark:shadow-[0_16px_40px_rgba(2,6,23,0.35)]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Workspace konteksti</p>
+                    <h2 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-slate-950 dark:text-slate-100">Biznes egaligi</h2>
+                    <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                        Add/remove actionlari login qilingan owner kontekstida ishlaydi.
+                    </p>
 
-                    <ComponentCard
-                        title="Business context"
-                        desc="Add/remove actionlar login qilingan owner kontekstida ishlaydi."
-                    >
-                        <div className="space-y-3 text-sm text-slate-600">
-                            <div className="rounded-2xl border border-slate-200 px-4 py-3">
-                                <p className="text-slate-400">Business ID</p>
-                                <p className="mt-1 break-all font-medium text-slate-900">{businessId || "Topilmadi"}</p>
-                            </div>
-                            <div className="rounded-2xl border border-slate-200 px-4 py-3">
-                                <p className="text-slate-400">Owner ID</p>
-                                <p className="mt-1 break-all font-medium text-slate-900">{ownerId || "Topilmadi"}</p>
-                            </div>
+                    <div className="mt-5 space-y-2.5">
+                        <div className="rounded-[18px] border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Biznes ID</div>
+                            <div className="mt-2 break-all text-sm font-bold text-slate-900 dark:text-slate-100">{businessId || "Topilmadi"}</div>
                         </div>
-                    </ComponentCard>
+
+                        <div className="rounded-[18px] border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/60">
+                            <div className="text-[10px] font-black uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Ega ID</div>
+                            <div className="mt-2 break-all text-sm font-bold text-slate-900 dark:text-slate-100">{ownerId || "Topilmadi"}</div>
+                        </div>
+
+                        <div className="rounded-[18px] border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
+                            Bu flow yangi user yaratmaydi. Tizimda oldindan mavjud bo'lgan telefon raqami role ichiga ulanadi.
+                        </div>
+                    </div>
                 </div>
+            </section>
 
-                <div className="grid grid-cols-1 gap-6 xl:grid-cols-[380px_minmax(0,1fr)]">
-                    <ComponentCard
-                        title="Add member"
-                        desc="Mavjud userni teacher yoki assistant roliga biriktiring."
+            <section className="grid grid-cols-1 gap-5 xl:grid-cols-[0.9fr_1.1fr]">
+                <div className="rounded-[26px] border border-white/60 bg-white/86 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/75 dark:shadow-[0_16px_40px_rgba(2,6,23,0.35)]">
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">A'zo qo‘shish</p>
+                    <h2 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-slate-950 dark:text-slate-100">Rol biriktirish</h2>
+                    <p className="mt-3 text-sm leading-6 text-slate-500 dark:text-slate-400">
+                        Teacher yoki assistant sifatida mavjud userni workspacega biriktiring.
+                    </p>
+
+                    <form
+                        onSubmit={(event) => {
+                            event.preventDefault();
+                            formik.handleSubmit();
+                        }}
+                        className="mt-6 space-y-4"
                     >
-                        <form
-                            onSubmit={(e) => {
-                                e.preventDefault();
-                                formik.handleSubmit();
-                            }}
-                            className="space-y-5"
+                        <div>
+                            <Label htmlFor="phone">Telefon raqami</Label>
+                            <Input<AddTeamMemberForm>
+                                type="text"
+                                formik={formik}
+                                name="phone"
+                                placeholder="998901234567"
+                            />
+                        </div>
+
+                        <div>
+                            <Label htmlFor="role">Rol</Label>
+                            <Select
+                                options={roleOptions}
+                                placeholder="Rolni tanlang"
+                                defaultValue={selectedRole}
+                                onChange={handleRoleChange}
+                            />
+                        </div>
+
+                        <Button
+                            type="submit"
+                            variant="primary"
+                            className="w-full rounded-[18px] py-3.5 text-sm font-medium"
+                            startIcon={<UserPlus className="h-4 w-4"/>}
+                            isPending={isAddingTeacher || isAddingAssistant}
+                            disabled={!businessId || !ownerId || isAddingTeacher || isAddingAssistant}
                         >
-                            <div>
-                                <Label htmlFor="phone">Phone number</Label>
-                                <Input<AddTeamMemberForm>
-                                    type="text"
-                                    formik={formik}
-                                    name="phone"
-                                    placeholder="998901234567"
-                                />
-                            </div>
+                            Workspace'ga a'zo qo‘shish
+                        </Button>
+                    </form>
+                </div>
 
-                            <div>
-                                <Label htmlFor="role">Role</Label>
-                                <Select
-                                    options={roleOptions}
-                                    placeholder="Rolni tanlang"
-                                    defaultValue={selectedRole}
-                                    onChange={handleRoleChange}
-                                />
-                            </div>
+                <div className="rounded-[26px] border border-white/60 bg-white/86 p-6 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/75 dark:shadow-[0_16px_40px_rgba(2,6,23,0.35)]">
+                    <div className="flex items-center justify-between gap-4">
+                        <div>
+                            <p className="text-[11px] font-semibold uppercase tracking-[0.2em] text-slate-400 dark:text-slate-500">Jamoa a'zolari</p>
+                            <h2 className="mt-2 text-2xl font-bold tracking-[-0.04em] text-slate-950 dark:text-slate-100">Joriy ro‘yxat</h2>
+                        </div>
+                        <div className="rounded-full bg-slate-100 px-4 py-1.5 text-[10px] font-black uppercase tracking-[0.18em] text-slate-500 dark:bg-slate-900 dark:text-slate-400">
+                            {members.length} ta faol a'zo
+                        </div>
+                    </div>
 
-                            <div className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
-                                Bu flow yangi user yaratmaydi. Telefon raqami oldindan tizimda mavjud bo'lishi kerak.
-                            </div>
-
-                            <Button
-                                type="submit"
-                                variant="primary"
-                                className="w-full rounded-2xl"
-                                startIcon={<UserPlus className="h-4 w-4"/>}
-                                isPending={isAddingTeacher || isAddingAssistant}
-                                disabled={!businessId || !ownerId || isAddingTeacher || isAddingAssistant}
-                            >
-                                Add member
-                            </Button>
-                        </form>
-                    </ComponentCard>
-
-                    <ComponentCard
-                        title="Team members"
-                        desc="Teacher va assistantlar ro'yxati. Assistant uchun remove action mavjud."
-                    >
+                    <div className="mt-6">
                         {isUserLoading ? (
-                            <div className="py-10 text-center text-sm text-slate-500">Foydalanuvchi ma'lumotlari yuklanmoqda...</div>
+                            <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Foydalanuvchi ma'lumotlari yuklanmoqda...</div>
                         ) : !businessId ? (
-                            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            <div className="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
                                 Business context topilmadi. Team management uchun login userda `businessId` bo'lishi kerak.
                             </div>
                         ) : isPending ? (
-                            <div className="py-10 text-center text-sm text-slate-500">Jamoa ro'yxati yuklanmoqda...</div>
+                            <div className="py-12 text-center text-sm text-slate-500 dark:text-slate-400">Jamoa ro'yxati yuklanmoqda...</div>
                         ) : isError ? (
-                            <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                            <div className="rounded-[24px] border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">
                                 {error instanceof Error ? error.message : "Jamoa ro'yxatini olib bo'lmadi."}
                             </div>
                         ) : members.length === 0 ? (
-                            <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-slate-300 px-6 py-14 text-center">
-                                <UsersRound className="h-10 w-10 text-slate-300"/>
-                                <p className="mt-4 text-base font-medium text-slate-700">Hozircha jamoa a'zolari yo'q</p>
-                                <p className="mt-1 max-w-md text-sm text-slate-500">
-                                    Chap tomondagi forma orqali mavjud userni teacher yoki assistant sifatida biriktiring.
+                            <div className="rounded-[28px] border border-dashed border-slate-300 bg-slate-50/70 px-6 py-16 text-center dark:border-slate-800 dark:bg-slate-900/60">
+                                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[22px] bg-white shadow-sm dark:bg-slate-900 dark:shadow-none">
+                                    <UsersRound className="h-8 w-8 text-slate-300 dark:text-slate-500"/>
+                                </div>
+                                <p className="mt-5 text-lg font-black text-slate-900 dark:text-slate-100">Hozircha jamoa a'zolari yo'q</p>
+                                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-500 dark:text-slate-400">
+                                    Chap tomondagi role assignment formasi orqali teacher yoki assistantni workspacega qo'shing.
                                 </p>
                             </div>
                         ) : (
-                            <div className="overflow-hidden rounded-2xl border border-slate-200">
-                                <div className="overflow-x-auto">
-                                    <table className="min-w-full divide-y divide-slate-200">
-                                        <thead className="bg-slate-50">
-                                        <tr className="text-left text-xs font-semibold uppercase tracking-[0.08em] text-slate-500">
-                                            <th className="px-5 py-4">Full name</th>
-                                            <th className="px-5 py-4">Phone</th>
-                                            <th className="px-5 py-4">Role</th>
-                                            <th className="px-5 py-4 text-right">Action</th>
-                                        </tr>
-                                        </thead>
-                                        <tbody className="divide-y divide-slate-100 bg-white">
-                                        {members.map((member) => {
-                                            const isAssistant = member.role === "ASSISTANT";
+                            <div className="space-y-3">
+                                {members.map((member) => {
+                                    const isAssistant = member.role === "ASSISTANT";
 
-                                            return (
-                                                <tr key={member.id} className="text-sm text-slate-700">
-                                                    <td className="px-5 py-4 font-medium text-slate-900">{member.fullName}</td>
-                                                    <td className="px-5 py-4">{member.phone || "—"}</td>
-                                                    <td className="px-5 py-4">
-                                                            <span
-                                                                className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
-                                                                    isAssistant
-                                                                        ? "bg-blue-50 text-blue-700"
-                                                                        : "bg-emerald-50 text-emerald-700"
-                                                                }`}
-                                                            >
-                                                                {member.role}
-                                                            </span>
-                                                    </td>
-                                                    <td className="px-5 py-4 text-right">
-                                                        {isAssistant ? (
-                                                            <Button
-                                                                type="button"
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="rounded-xl text-red-600 ring-red-200 hover:bg-red-50"
-                                                                startIcon={<Trash2 className="h-4 w-4"/>}
-                                                                onClick={() => handleRemoveAssistant(member)}
-                                                                disabled={isRemovingAssistant}
-                                                            >
-                                                                Remove
-                                                            </Button>
-                                                        ) : (
-                                                            <span className="text-xs text-slate-400">Teacher remove yo'q</span>
-                                                        )}
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })}
-                                        </tbody>
-                                    </table>
-                                </div>
+                                    return (
+                                        <div
+                                            key={member.id}
+                                            className="flex flex-col gap-4 rounded-[26px] border border-slate-200 bg-slate-50/70 p-5 md:flex-row md:items-center md:justify-between dark:border-slate-800 dark:bg-slate-900/60"
+                                        >
+                                            <div className="flex min-w-0 items-center gap-4">
+                                                <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] ${isAssistant ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200"}`}>
+                                                    {isAssistant ? <Users className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="text-base font-black tracking-[-0.03em] text-slate-950 dark:text-slate-100">
+                                                        {member.fullName}
+                                                    </div>
+                                                    <div className="mt-1 text-sm text-slate-500 dark:text-slate-400">
+                                                        {member.phone || "Telefon mavjud emas"}
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            <div className="flex items-center gap-3">
+                                                <span
+                                                    className={`inline-flex rounded-full px-3 py-2 text-[10px] font-black uppercase tracking-[0.18em] ${
+                                                        isAssistant ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200"
+                                                    }`}
+                                                >
+                                                    {member.role}
+                                                </span>
+
+                                                {isAssistant ? (
+                                                    <Button
+                                                        type="button"
+                                                        variant="outline"
+                                                        size="sm"
+                                                        className="rounded-[18px] text-red-600"
+                                                        startIcon={<Trash2 className="h-4 w-4"/>}
+                                                        onClick={() => handleRemoveAssistant(member)}
+                                                        disabled={isRemovingAssistant}
+                                                    >
+                                                        Olib tashlash
+                                                    </Button>
+                                                ) : (
+                                                    <span className="text-xs font-bold uppercase tracking-[0.18em] text-slate-400">
+                                                        Himoyalangan rol
+                                                    </span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
                             </div>
                         )}
-                    </ComponentCard>
+                    </div>
                 </div>
-            </div>
-        </>
+            </section>
+        </div>
     );
 }

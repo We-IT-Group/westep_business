@@ -1,50 +1,52 @@
-import {useEffect, useState} from "react";
+import {useCallback, useEffect, useState} from "react";
+import {useNavigate} from "react-router-dom";
+import {useFormik} from "formik";
+import * as Yup from "yup";
+import {
+    Camera,
+    CheckCircle2,
+} from "lucide-react";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "../ui/dialog";
 import {Button} from "../ui/button";
 import {Input} from "../ui/input";
 import {Textarea} from "../ui/textarea";
-import {CheckCircle2, BookOpen, ImageIcon} from "lucide-react";
-import CommonFileInput from "../form/input/CommonFileInput.tsx";
 import {useAddCourse} from "../../api/courses/useCourse.ts";
 import {useUser} from "../../api/auth/useAuth.ts";
 import {useAddFile} from "../../api/file/useFile.ts";
 import {Course} from "../../types/types.ts";
-import {useFormik} from "formik";
-import * as Yup from "yup";
-import Spinner from "../common/Spinner.tsx";
-import {showErrorToast} from "../../utils/toast.tsx";
+import {showErrorToast, showSuccessToast} from "../../utils/toast.tsx";
+import {useTeacherProfileMe} from "../../api/teacherProfile/useTeacherProfile.ts";
 
 interface CourseCreationFlowProps {
     open: boolean;
     onClose: () => void;
-    onComplete?: (courseData: { title: string; description: string }) => void;
+    onComplete?: (courseData: { id?: string; title: string; description: string }) => void;
 }
 
 type Step = 1 | 2 | 3;
 
-export function CourseCreationFlow({open, onClose}: CourseCreationFlowProps) {
+export function CourseCreationFlow({open, onClose, onComplete}: CourseCreationFlowProps) {
+    const navigate = useNavigate();
     const [step, setStep] = useState<Step>(1);
     const [selectedImage, setSelectedImage] = useState<File | null>(null);
+    const [previewUrl, setPreviewUrl] = useState("");
     const [imageError, setImageError] = useState("");
-
 
     const {mutateAsync: addCourse, isSuccess, isPending} = useAddCourse();
     const {mutateAsync: uploadFile, isPending: isUploadingFile} = useAddFile();
     const {data: user} = useUser();
+    const {data: teacherProfile} = useTeacherProfileMe((user?.roleName || "").toUpperCase().includes("TEACHER"));
+    const resolvedBusinessId = user?.businessId || teacherProfile?.businessId || "";
 
-    const [initialValues, setInitialValues] = useState<Pick<Course, "name" | "description" | "attachmentId">>({
-        name: "",
-        description: "",
-        attachmentId: ""
-    });
-
-
-    const formik = useFormik({
-        initialValues: initialValues,
-        enableReinitialize: true,
-        validationSchema: Yup.object().shape({
-            name: Yup.string()
-                .required("Nomini kiriting!"),
+    const formik = useFormik<Pick<Course, "name" | "description" | "attachmentId">>({
+        initialValues: {
+            name: "",
+            description: "",
+            attachmentId: "",
+        },
+        validationSchema: Yup.object({
+            name: Yup.string().trim().required("Kurs nomini kiriting"),
+            description: Yup.string().max(2000, "Tavsif juda uzun"),
         }),
         onSubmit: async () => {
             if (!selectedImage) {
@@ -53,238 +55,278 @@ export function CourseCreationFlow({open, onClose}: CourseCreationFlowProps) {
                 return;
             }
 
-            if (!user?.businessId) {
-                showErrorToast("Business user topilmadi.", "Kurs yaratib bo'lmadi");
-                return;
+            try {
+                const formData = new FormData();
+                formData.append("file", selectedImage);
+
+                const uploadResponse = await uploadFile(formData);
+                const attachmentId =
+                    typeof uploadResponse === "string"
+                        ? uploadResponse
+                        : uploadResponse?.id || uploadResponse?.data?.id;
+
+                if (!attachmentId) {
+                    showErrorToast("Rasm ID qaytmadi.", "Kurs yaratib bo'lmadi");
+                    return;
+                }
+
+                const createdCourse = await addCourse({
+                    ...formik.values,
+                    ...(resolvedBusinessId ? {businessId: resolvedBusinessId} : {}),
+                    attachmentId,
+                });
+
+                onComplete?.({
+                    id: createdCourse?.id,
+                    title: formik.values.name,
+                    description: formik.values.description,
+                });
+                showSuccessToast("Yangi kurs yaratildi");
+                if (createdCourse?.id) {
+                    navigate(`/courses/details/${createdCourse.id}`);
+                }
+            } catch (error) {
+                showErrorToast(error, "Kurs yaratib bo'lmadi");
             }
-
-            const formData = new FormData();
-            formData.append("file", selectedImage);
-
-            const uploadResponse = await uploadFile(formData);
-            const attachmentId =
-                typeof uploadResponse === "string"
-                    ? uploadResponse
-                    : uploadResponse?.id || uploadResponse?.data?.id;
-
-            if (!attachmentId) {
-                showErrorToast("Rasm ID qaytmadi.", "Kurs yaratib bo'lmadi");
-                return;
-            }
-
-            await addCourse({
-                ...formik.values,
-                businessId: user.businessId,
-                attachmentId,
-            });
         },
     });
+
+    useEffect(() => {
+        if (!selectedImage) {
+            setPreviewUrl("");
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(selectedImage);
+        setPreviewUrl(objectUrl);
+
+        return () => {
+            URL.revokeObjectURL(objectUrl);
+        };
+    }, [selectedImage]);
+
+    const handleNext = () => {
+        if (step === 1) {
+            formik.setTouched({name: true});
+            if (!formik.values.name.trim()) return;
+            setStep(2);
+            return;
+        }
+
+        if (step === 2) {
+            if (!selectedImage) {
+                setImageError("Kurs rasmi tanlanishi kerak.");
+                return;
+            }
+
+            setImageError("");
+            setStep(3);
+        }
+    };
+
+    const handleReset = useCallback(() => {
+        setStep(1);
+        setSelectedImage(null);
+        setPreviewUrl("");
+        setImageError("");
+        formik.resetForm();
+    }, [formik]);
+
+    const handleClose = useCallback(() => {
+        handleReset();
+        onClose();
+    }, [handleReset, onClose]);
 
     useEffect(() => {
         if (isSuccess) {
             handleClose();
         }
-    }, [isSuccess]);
-
-    const handleNext = () => {
-        if (step === 1 && formik.values.name.trim()) {
-            setStep(2);
-        } else if (step === 2 && selectedImage) {
-            setStep(3);
-        } else if (step === 2) {
-            setImageError("Kurs rasmi tanlanishi kerak.");
-        }
-    };
-    const handleReset = () => {
-        setStep(1);
-        setSelectedImage(null);
-        setImageError("");
-        formik.resetForm()
-    };
-
-    const handleClose = () => {
-        handleReset();
-        onClose();
-    };
+    }, [handleClose, isSuccess]);
 
     return (
         <Dialog open={open} onOpenChange={handleClose}>
-            <DialogContent className="max-w-2xl bg-white">
-                <DialogHeader>
-                    <DialogTitle className="text-2xl">Create New Course</DialogTitle>
-                </DialogHeader>
-                <form
-                    onSubmit={(e) => {
-                        e.preventDefault();
-                        formik.handleSubmit();
-                        return false;
-                    }}>
-
-                    {/* Progress Steps */}
-                    <div className="flex items-center gap-2 mb-6">
-                        {[1, 2, 3].map((num) => (
-                            <div key={num} className="flex items-center flex-1">
-                                <div
-                                    className={`flex items-center justify-center w-8 h-8 rounded-full font-medium text-sm transition-all ${
-                                        step >= num
-                                            ? "bg-green-600 text-white"
-                                            : "bg-gray-200 text-gray-500"
-                                    }`}
-                                >
-                                    {step > num ? <CheckCircle2 className="w-5 h-5"/> : num}
-                                </div>
-                                {num < 3 && (
-                                    <div
-                                        className={`flex-1 h-1 mx-2 rounded transition-all ${
-                                            step > num ? "bg-green-600" : "bg-gray-200"
-                                        }`}
-                                    />
-                                )}
-                            </div>
-                        ))}
-                    </div>
-
-                    {/* Step Content */}
-                    <div className="min-h-[300px]">
-                        {step === 1 && (
-                            <div className="space-y-6">
-                                <div className="text-center mb-6">
-                                    <div
-                                        className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                        <BookOpen className="w-8 h-8 text-blue-600"/>
-                                    </div>
-                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Course Information</h3>
-                                    <p className="text-gray-600 text-sm">Let's start with the basics</p>
-                                </div>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                            Course Title *
-                                        </label>
-                                        <Input
-                                            value={formik.values.name}
-                                            onChange={formik?.handleChange}
-                                            onBlur={formik?.handleBlur}
-                                            id={"name"}
-                                            name={"name"}
-                                            placeholder="e.g., Introduction to Web Development"
-                                            className={`text-lg h-12 ${formik?.errors.name && formik.touched.name
-                                            && "text-error-500 border-bottom-1 border-red-500"}`}
-                                            autoFocus
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-900 mb-2">
-                                            Description
-                                        </label>
-                                        <Textarea
-                                            value={formik.values.description}
-                                            onChange={formik?.handleChange}
-                                            onBlur={formik?.handleBlur}
-                                            id={"description"}
-                                            name={"description"}
-                                            placeholder="What will students learn in this course?"
-                                            className="min-h-[120px] resize-none"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 2 && (
-                            <div className="space-y-6">
-                                <div className="text-center mb-6">
-                                    <CommonFileInput
-                                        attachmentId={formik.values?.attachmentId as string}
-                                        accept="image/png, image/jpeg, image/jpg, image/webp"
-                                        maxSizeMB={20}
-                                        className={'flex flex-col items-center justify-center'}
-                                        text='Rasm yuklash'
-                                        imageError={imageError}
-                                        value={selectedImage}
-                                        onChange={(file) => {
-                                            setSelectedImage(file);
-                                            if (file) {
-                                                setImageError("");
-                                            }
-                                        }}
-                                    />
-                                </div>
-                            </div>
-                        )}
-
-                        {step === 3 && (
-                            <div className="space-y-6">
-                                <div className="text-center mb-6">
-                                    <div
-                                        className="w-16 h-16 bg-green-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                        <CheckCircle2 className="w-8 h-8 text-white"/>
-                                    </div>
-                                    <h3 className="text-xl font-bold text-gray-900 mb-2">Ready to Start!</h3>
-                                    <p className="text-gray-600 text-sm">
-                                        Your course structure is ready to be built
-                                    </p>
-                                </div>
-
-                                <div
-                                    className="bg-gradient-to-br from-blue-50 to-purple-50 rounded-xl p-6 border border-blue-200">
-                                    <h4 className="font-bold text-gray-900 mb-4 text-lg">Your Course:</h4>
-                                    <div className="bg-white rounded-lg p-4 mb-4">
-                                        <h5 className="font-semibold text-gray-900 mb-1">{formik.values.name}</h5>
-                                        <p className="text-sm text-gray-600">{formik.values.description || "No description"}</p>
-                                    </div>
-                                    <div className="text-sm text-gray-700">
-                                        <p className="mb-2">✨ Next steps:</p>
-                                        <ul className="space-y-1 ml-4">
-                                            <li>• Add your first module</li>
-                                            <li>• Create lessons with content</li>
-                                            <li>• Upload videos and resources</li>
-                                            <li>• Publish when ready</li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Actions */}
-                    <div className="flex items-center justify-between pt-6 border-t">
-                        <Button
-                            variant="ghost"
-                            type='button'
-                            onClick={step === 1 ? handleClose : () => setStep((s) => (s - 1) as Step)}
+            <DialogContent className="h-[min(88vh,940px)] w-[min(95vw,1720px)] max-w-[min(95vw,1720px)] overflow-hidden border border-white/70 bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,250,252,0.94))] p-0 shadow-[0_32px_90px_rgba(15,23,42,0.16)]">
+                <div className="h-full min-h-0 overflow-y-auto p-6 md:p-8 xl:p-12">
+                    <div className="mx-auto flex h-full max-w-7xl flex-col">
+                        <form
+                            onSubmit={(event) => {
+                                event.preventDefault();
+                                formik.handleSubmit();
+                                return false;
+                            }}
+                            className="flex min-h-full flex-col"
                         >
-                            {step === 1 ? "Cancel" : "Back"}
-                        </Button>
+                            <DialogHeader className="text-left">
+                                <div className="inline-flex w-fit items-center gap-2 rounded-full border border-slate-200 bg-slate-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-slate-600">
+                                    3 bosqichdan {step}-bosqich
+                                </div>
+                                <DialogTitle className="mt-4 text-3xl font-black tracking-tight text-slate-950">
+                                    {step === 1
+                                        ? "Kurs ma'lumotlarini kiriting"
+                                        : step === 2
+                                            ? "Kurs rasmini yuklang"
+                                            : "Tekshirish va yaratish"}
+                                </DialogTitle>
+                                <p className="mt-3 max-w-4xl text-base font-medium leading-7 text-slate-500">
+                                    {step === 1
+                                        ? "Kurs nomi va tavsifini qulay formatda kiriting."
+                                        : step === 2
+                                            ? "Course card uchun yaxshi cover tanlang."
+                                            : "Ma'lumotlarni tekshirib, kursni yarating."}
+                                </p>
+                            </DialogHeader>
 
-                        <div className="flex gap-2">
-                            {step < 3 && (
+                            <div className="min-h-[420px] flex-1">
+                                {step === 1 ? (
+                                    <div className="mx-auto max-w-5xl space-y-7">
+                                        <div>
+                                            <label className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">
+                                                Kurs nomi
+                                            </label>
+                                            <Input
+                                                id="name"
+                                                name="name"
+                                                value={formik.values.name}
+                                                onChange={formik.handleChange}
+                                                onBlur={formik.handleBlur}
+                                                placeholder="Masalan: Performance Marketing from Zero"
+                                                className="mt-2 h-16 rounded-[22px] border-slate-200 bg-slate-50/80 px-5 text-lg font-semibold"
+                                                autoFocus
+                                            />
+                                            {formik.touched.name && formik.errors.name ? (
+                                                <p className="mt-2 text-sm font-semibold text-red-500">{formik.errors.name}</p>
+                                            ) : null}
+                                        </div>
+
+                                        <div>
+                                            <label className="text-xs font-black uppercase tracking-[0.24em] text-slate-400">
+                                                Qisqacha tavsif
+                                            </label>
+                                            <Textarea
+                                                id="description"
+                                                name="description"
+                                                value={formik.values.description}
+                                                onChange={formik.handleChange}
+                                                onBlur={formik.handleBlur}
+                                                placeholder="Kurs kim uchun, qanday natija beradi va qanday formatda o‘tiladi?"
+                                                className="mt-2 min-h-[240px] rounded-[26px] border-slate-200 bg-slate-50/80 px-6 py-5 text-base leading-8"
+                                            />
+                                        </div>
+                                    </div>
+                                ) : null}
+
+                                {step === 2 ? (
+                                    <div className="mx-auto max-w-5xl space-y-7">
+                                        <div className="overflow-hidden rounded-[30px] border border-slate-200 bg-slate-50/80">
+                                            {previewUrl ? (
+                                                <img src={previewUrl} alt="Course preview" className="h-80 w-full object-cover"/>
+                                            ) : (
+                                                <div className="flex h-80 flex-col items-center justify-center gap-5 bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_55%)]">
+                                                    <div className="flex h-[72px] w-[72px] items-center justify-center rounded-[24px] bg-white text-slate-400 shadow-sm">
+                                                        <Camera className="h-7 w-7"/>
+                                                    </div>
+                                                <div className="text-center">
+                                                        <p className="text-lg font-black text-slate-950">Kurs rasmini yuklang</p>
+                                                        <p className="mt-2 text-sm font-medium text-slate-500">PNG, JPG yoki WebP format tavsiya etiladi.</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        <label className="flex cursor-pointer items-center justify-between rounded-[24px] border border-slate-200 bg-slate-50/80 px-5 py-5 transition hover:bg-slate-100/80">
+                                            <div>
+                                                <p className="text-base font-black text-slate-950">Kurs rasmi</p>
+                                                <p className="mt-1 text-sm font-semibold text-slate-500">Course catalog preview uchun ishlatiladi.</p>
+                                            </div>
+                                            <div className="rounded-xl bg-slate-950 px-4 py-2.5 text-[11px] font-black uppercase tracking-[0.2em] text-white">
+                                                Tanlash
+                                            </div>
+                                            <input
+                                                type="file"
+                                                accept="image/png, image/jpeg, image/jpg, image/webp"
+                                                className="hidden"
+                                                onChange={(event) => {
+                                                    const file = event.target.files?.[0] || null;
+                                                    setSelectedImage(file);
+                                                    if (file) setImageError("");
+                                                }}
+                                            />
+                                        </label>
+                                        {imageError ? <p className="text-sm font-semibold text-red-500">{imageError}</p> : null}
+                                    </div>
+                                ) : null}
+
+                                {step === 3 ? (
+                                    <div className="space-y-6">
+                                        <div className="rounded-[28px] border border-slate-200 bg-[linear-gradient(135deg,rgba(248,250,252,0.9),rgba(255,255,255,0.98))] p-5 shadow-[0_20px_50px_rgba(15,23,42,0.05)]">
+                                            <div className="flex items-start justify-between gap-4">
+                                                <div>
+                                                    <div className="inline-flex items-center gap-2 rounded-full bg-slate-950 px-3 py-1 text-[10px] font-black uppercase tracking-[0.24em] text-white">
+                                                        Kurs xulosasi
+                                                    </div>
+                                                    <h4 className="mt-4 text-2xl font-black tracking-tight text-slate-950">{formik.values.name}</h4>
+                                                    <p className="mt-3 text-sm font-medium leading-7 text-slate-500">
+                                                        {formik.values.description || "Hali tavsif kiritilmagan."}
+                                                    </p>
+                                                </div>
+                                                <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700">
+                                                    <CheckCircle2 className="h-5 w-5"/>
+                                                </div>
+                                            </div>
+
+                                            <div className="mt-5 grid gap-3 md:grid-cols-3">
+                                                <div className="rounded-[22px] border border-slate-200 bg-white p-4">
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Builder</p>
+                                                    <p className="mt-2 text-sm font-black text-slate-950">Modullar uchun tayyor</p>
+                                                </div>
+                                                <div className="rounded-[22px] border border-slate-200 bg-white p-4">
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Rasm</p>
+                                                    <p className="mt-2 text-sm font-black text-slate-950">{selectedImage ? "Biriktirilgan" : "Yo‘q"}</p>
+                                                </div>
+                                                <div className="rounded-[22px] border border-slate-200 bg-white p-4">
+                                                    <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400">Holat</p>
+                                                    <p className="mt-2 text-sm font-black text-slate-950">Qoralama kurs</p>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                ) : null}
+                            </div>
+
+                            <div className="mt-8 flex items-center justify-between border-t border-slate-200 pt-6">
                                 <Button
+                                    variant="ghost"
                                     type="button"
-                                    onClick={handleNext}
-                                    disabled={(step === 1 && !formik.values.name.trim()) || isPending}
-                                    className="bg-green-600 hover:bg-green-700 text-white min-w-[120px]"
+                                    onClick={step === 1 ? handleClose : () => setStep((current) => (current - 1) as Step)}
+                                    className="rounded-2xl px-4 text-xs font-black uppercase tracking-[0.2em]"
                                 >
-                                    Continue
+                                    {step === 1 ? "Bekor qilish" : "Orqaga"}
                                 </Button>
-                            )}
-                            {step === 3 && (
-                                <Button
-                                    type="submit"
-                                    disabled={isPending || isUploadingFile}
-                                    className="bg-green-600 hover:bg-green-700 text-white min-w-[120px]"
-                                >
-                                    Create Course
-                                    {
-                                        (isPending || isUploadingFile) && <Spinner/>
-                                    }
-                                </Button>
-                            )}
-                        </div>
+
+                                <div className="flex gap-2">
+                                    {step < 3 ? (
+                                        <Button
+                                            type="button"
+                                            onClick={handleNext}
+                                            disabled={(step === 1 && !formik.values.name.trim()) || isPending}
+                                            className="h-11 rounded-2xl bg-blue-600 px-5 text-xs font-black uppercase tracking-[0.2em] text-white hover:bg-blue-700"
+                                        >
+                                            Davom etish
+                                        </Button>
+                                    ) : (
+                                        <Button
+                                            type="submit"
+                                            disabled={isPending || isUploadingFile}
+                                            className="h-11 rounded-2xl bg-emerald-600 px-5 text-xs font-black uppercase tracking-[0.2em] text-white hover:bg-emerald-700"
+                                        >
+                                            {isPending || isUploadingFile ? "Yaratilmoqda..." : "Kurs yaratish"}
+                                        </Button>
+                                    )}
+                                </div>
+                            </div>
+                        </form>
                     </div>
-                </form>
+                </div>
             </DialogContent>
         </Dialog>
     );

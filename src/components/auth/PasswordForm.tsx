@@ -1,5 +1,5 @@
 import {useLogin} from "../../api/auth/useAuth.ts";
-import {Link} from "react-router";
+import {Link} from "react-router-dom";
 import {useFormik} from "formik";
 import {useRequireState} from "../../hooks/useRequireState.ts";
 import * as Yup from "yup";
@@ -40,7 +40,7 @@ function PasswordForm() {
                     }}
                     className="bg-transparent"
                 >
-                    <p className="text-2xl font-semibold text-gray-900 text-center mb-8">
+                    <p className="mb-8 text-center text-2xl font-semibold text-gray-900 dark:text-white">
                         Kirish
                     </p>
                     <div className="grid grid-cols-1 mt-2">
@@ -63,8 +63,8 @@ function PasswordForm() {
                         />
                     </div>
                 </form>
-                <p className={'text-center text-gray-900 mt-2'}><Link
-                    className={"text-gray-800"} to="/forgot-password">Parolni unutdingizmi?</Link></p>
+                <p className={'mt-2 text-center text-gray-900 dark:text-slate-200'}><Link
+                    className={"text-gray-800 dark:text-slate-300"} to="/forgot-password">Parolni unutdingizmi?</Link></p>
             </div>
         </section>
     );

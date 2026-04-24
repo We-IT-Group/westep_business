@@ -2,7 +2,7 @@ import axios from "axios";
 import { getItem, removeItem, setItem } from "../utils/utils.ts";
 
 
-export const baseUrl = "http://192.168.1.237:8080/api"
+export const baseUrl = "http://localhost:8080/api"
 export const baseUrlImage = "http://192.168.1.237:8080/api"
 export const apiBaseOrigin = baseUrl.replace(/\/api$/, "");
 

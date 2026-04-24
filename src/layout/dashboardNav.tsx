@@ -22,40 +22,40 @@ export type DashboardNavItem = {
 
 export const dashboardNavItems: DashboardNavItem[] = [
     {
-        label: "Dashboard",
+        label: "Boshqaruv",
         path: "/",
         icon: "overview",
-        description: "Overview of your platform.",
+        description: "Platformangizning umumiy holati.",
     },
     {
-        label: "Courses",
+        label: "Kurslar",
         path: "/courses",
         icon: "courses",
-        description: "Manage published and upcoming learning programs.",
+        description: "Chop etilgan va tayyorlanayotgan ta'lim dasturlarini boshqaring.",
     },
     {
-        label: "Team",
+        label: "Jamoa",
         path: "/users",
         icon: "team",
-        description: "Add and manage teachers and assistants in your business.",
+        description: "Biznesingizdagi o‘qituvchi va assistentlarni boshqaring.",
     },
     {
-        label: "Students",
+        label: "Talabalar",
         path: "/students",
         icon: "students",
-        description: "Track learner growth, progress, and engagement.",
+        description: "Talabalar o‘sishi, faolligi va natijalarini kuzating.",
     },
     {
-        label: "Analytics",
+        label: "Tahlillar",
         path: "/analytics",
         icon: "analytics",
-        description: "Performance and platform insights.",
+        description: "Natijalar va platforma bo‘yicha tahlillar.",
     },
     {
-        label: "Settings",
+        label: "Sozlamalar",
         path: "/settings",
         icon: "settings",
-        description: "Workspace and platform settings.",
+        description: "Workspace va platforma sozlamalari.",
     },
 ];
 
@@ -76,28 +76,56 @@ export const getDashboardPageMeta = (pathname: string): DashboardPageMeta => {
 
     if (pathname.startsWith("/courses")) {
         return {
-            title: "Courses",
-            description: "Manage published and upcoming learning programs.",
+            title: "Kurslar",
+            description: "Chop etilgan va tayyorlanayotgan ta'lim dasturlarini boshqaring.",
         };
     }
 
     if (pathname.startsWith("/users")) {
         return {
-            title: "Team",
-            description: "Add and manage teachers and assistants in your business.",
+            title: "Jamoa",
+            description: "Biznesingizdagi o‘qituvchi va assistentlarni boshqaring.",
         };
     }
 
     if (pathname.startsWith("/students")) {
         return {
-            title: "Students",
-            description: "Track learner growth, progress, and engagement.",
+            title: "Talabalar",
+            description: "Talabalar o‘sishi, faolligi va natijalarini kuzating.",
+        };
+    }
+
+    if (pathname.startsWith("/teachers")) {
+        return {
+            title: "O‘qituvchilar",
+            description: "Mentorlar yuki, qo‘llab-quvvatlash salohiyati va jamoa ishini kuzating.",
+        };
+    }
+
+    if (pathname.startsWith("/schedule")) {
+        return {
+            title: "Jadval",
+            description: "Workspace bo‘ylab reja, jarayon va arxiv oqimini ko‘ring.",
+        };
+    }
+
+    if (pathname.startsWith("/messages")) {
+        return {
+            title: "Xabarlar",
+            description: "Bildirishnomalar, o‘qilmagan xabarlar va javob amallarini boshqaring.",
+        };
+    }
+
+    if (pathname.startsWith("/profile")) {
+        return {
+            title: "Profil",
+            description: "Workspace identifikatsiyasi, biznes konteksti va kirish profili.",
         };
     }
 
     return {
-        title: "Dashboard",
-        description: "Overview of your platform.",
+        title: "Boshqaruv",
+        description: "Platformangizning umumiy holati.",
     };
 };
 

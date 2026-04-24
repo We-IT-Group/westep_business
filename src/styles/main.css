@@ -191,7 +191,81 @@
     }
 
     body {
-        @apply relative font-normal font-outfit z-1 bg-gray-50;
+        @apply relative z-1 bg-gray-50 font-normal font-outfit text-slate-950 transition-colors duration-300 dark:bg-slate-950 dark:text-slate-100;
+    }
+
+    html {
+        color-scheme: light;
+    }
+
+    html.dark {
+        color-scheme: dark;
+    }
+}
+
+@layer components {
+    .compact-workspace {
+        font-size: 15px;
+    }
+
+    .compact-workspace > div {
+        width: 100%;
+        max-width: 1560px;
+        margin-inline: auto;
+    }
+
+    .compact-workspace h1 {
+        font-size: clamp(1.9rem, 2.25vw, 2.85rem);
+        line-height: 1.04;
+    }
+
+    .compact-workspace h2 {
+        font-size: clamp(1.4rem, 1.7vw, 1.95rem);
+        line-height: 1.08;
+    }
+
+    .compact-workspace h3 {
+        font-size: clamp(1.15rem, 1.35vw, 1.5rem);
+        line-height: 1.1;
+    }
+
+    .compact-workspace h4 {
+        font-size: clamp(1rem, 1.05vw, 1.12rem);
+        line-height: 1.15;
+    }
+
+    .compact-workspace p {
+        line-height: 1.55;
+    }
+
+    .compact-workspace input,
+    .compact-workspace textarea,
+    .compact-workspace select {
+        font-size: 0.95rem;
+    }
+
+    .compact-workspace [class*="rounded-[36px]"] {
+        border-radius: 28px;
+    }
+
+    .compact-workspace [class*="rounded-[34px]"] {
+        border-radius: 26px;
+    }
+
+    .compact-workspace [class*="rounded-[30px]"] {
+        border-radius: 22px;
+    }
+
+    .compact-workspace [class*="rounded-[28px]"] {
+        border-radius: 20px;
+    }
+
+    .compact-workspace [class*="rounded-[26px]"] {
+        border-radius: 18px;
+    }
+
+    .compact-workspace [class*="rounded-[24px]"] {
+        border-radius: 18px;
     }
 }
 

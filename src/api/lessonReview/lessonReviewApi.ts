@@ -24,6 +24,10 @@ type ReplyPayload = {
     content: string;
 };
 
+type DiscussionUpdatePayload = {
+    content: string;
+};
+
 export type ReviewSubmissionPayload = {
     score: number;
     feedback: string;
@@ -34,6 +38,7 @@ export type DiscussionReply = {
     id: string;
     content: string;
     author: string;
+    studentId?: string;
     createdAt: string;
 };
 
@@ -41,6 +46,7 @@ export type DiscussionThread = {
     id: string;
     content: string;
     author: string;
+    studentId?: string;
     createdAt: string;
     replies: DiscussionReply[];
 };
@@ -140,6 +146,7 @@ const normalizeDiscussionReply = (item: unknown, index: number): DiscussionReply
         id: asOptionalString(record.id) || `reply-${index}`,
         content: asString(record.content || record.message || record.reply || ""),
         author: asString(record.author || record.authorName || record.createdBy || "Unknown"),
+        studentId: asOptionalString(record.studentId || record.authorId || record.createdById),
         createdAt: asString(record.createdAt || record.repliedAt || ""),
     };
 };
@@ -150,6 +157,7 @@ const normalizeDiscussionThread = (item: unknown, index: number): DiscussionThre
         id: asOptionalString(record.id || record.commentId) || `comment-${index}`,
         content: asString(record.content || record.comment || record.message || ""),
         author: asString(record.author || record.authorName || record.createdBy || "Unknown"),
+        studentId: asOptionalString(record.studentId || record.authorId || record.createdById),
         createdAt: asString(record.createdAt || ""),
         replies: extractArray(record.replies).map(normalizeDiscussionReply),
     };
@@ -253,6 +261,24 @@ export const createDiscussionReply = async (commentId: string, body: ReplyPayloa
     }
 };
 
+export const updateDiscussion = async (commentId: string, body: DiscussionUpdatePayload) => {
+    try {
+        const {data} = await apiClient.patch(`/discussions/${commentId}`, body);
+        return data;
+    } catch (error) {
+        throw parseApiError(error, "Muhokamani yangilab bo'lmadi.");
+    }
+};
+
+export const deleteDiscussion = async (commentId: string) => {
+    try {
+        const {data} = await apiClient.delete(`/discussions/${commentId}`);
+        return data;
+    } catch (error) {
+        throw parseApiError(error, "Muhokamani o'chirib bo'lmadi.");
+    }
+};
+
 export const getLessonTasksReview = async (lessonId: string) => {
     try {
         const {data} = await apiClient.get(`/lesson-tasks/lesson/${lessonId}`);
@@ -286,6 +312,15 @@ export const getQuizResultsByTask = async (taskId: string) => {
         return extractArray(data as QuizResultsResponse).map(normalizeQuizResultSummary);
     } catch (error) {
         throw parseApiError(error, "Quiz resultlar yuklanmadi.");
+    }
+};
+
+export const getQuizResultsByLesson = async (lessonId: string) => {
+    try {
+        const {data} = await apiClient.get(`/lesson-tasks/quiz-results/manage/lesson/${lessonId}`);
+        return extractArray(data as QuizResultsResponse).map(normalizeQuizResultSummary);
+    } catch (error) {
+        throw parseApiError(error, "Lesson quiz resultlar yuklanmadi.");
     }
 };
 

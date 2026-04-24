@@ -24,6 +24,7 @@ const appendOptionalText = (formData: FormData, key: string, value?: string | nu
 
 const appendFiles = (formData: FormData, files?: File[]) => {
     files?.forEach((file) => {
+        formData.append("file", file);
         formData.append("files", file);
     });
 };
@@ -32,6 +33,7 @@ const appendLinks = (formData: FormData, links?: string[]) => {
     links?.forEach((link) => {
         const normalizedLink = link.trim();
         if (normalizedLink) {
+            formData.append("link", normalizedLink);
             formData.append("links", normalizedLink);
         }
     });

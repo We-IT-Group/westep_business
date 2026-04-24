@@ -1,90 +1,105 @@
-import { useFormik } from "formik";
+import {useFormik} from "formik";
 import * as Yup from "yup";
+import {Module} from "../../types/types.ts";
+import {useAddModule, useUpdateModule} from "../../api/module/useModule.ts";
 import Label from "../form/Label.tsx";
 import Input from "../form/input/InputField.tsx";
 import Button from "../ui/button/Button.tsx";
-import { Module } from "../../types/types.ts";
-import { useAddModule, useUpdateModule } from "../../api/module/useModule.ts";
 
 interface ModuleFormProps {
     courseId: string;
     initialData?: Partial<Module> | null;
+    suggestedOrderIndex?: number;
     onSuccess: () => void;
     onCancel: () => void;
 }
 
-export default function ModuleForm({ courseId, initialData, onSuccess, onCancel }: ModuleFormProps) {
-    const { mutateAsync: addModule, isPending: isAdding } = useAddModule();
-    const { mutateAsync: updateModule, isPending: isUpdating } = useUpdateModule();
+type ModuleFormValues = {
+    name: string;
+    price: number;
+};
 
-    const formik = useFormik({
+export default function ModuleForm({courseId, initialData, suggestedOrderIndex = 0, onSuccess, onCancel}: ModuleFormProps) {
+    const {mutateAsync: addModule, isPending: isAdding} = useAddModule();
+    const {mutateAsync: updateModule, isPending: isUpdating} = useUpdateModule();
+
+    const isEditing = Boolean(initialData?.id);
+
+    const formik = useFormik<ModuleFormValues>({
         initialValues: {
             name: initialData?.name || "",
-            description: initialData?.description || "",
             price: initialData?.price || 0,
-            orderIndex: initialData?.orderIndex || 0,
         },
         enableReinitialize: true,
         validationSchema: Yup.object({
-            name: Yup.string().required("Modul nomini kiriting!"),
-            price: Yup.number().required("Narxni kiriting!").min(0, "Narx 0 dan kam bo'lmasligi kerak"),
+            name: Yup.string().trim().required("Modul nomini kiriting"),
+            price: Yup.number().min(0, "Narx 0 dan kichik bo'lmasligi kerak").required("Narxni kiriting"),
         }),
         onSubmit: async (values) => {
-            if (initialData?.id) {
+            const payload = {
+                name: values.name.trim(),
+                description: initialData?.description || "",
+                price: Number(values.price) || 0,
+                courseId,
+                orderIndex: initialData?.orderIndex ?? suggestedOrderIndex,
+            };
+
+            if (isEditing && initialData?.id) {
                 await updateModule({
-                    ...values,
+                    ...payload,
                     id: initialData.id,
-                    courseId,
-                    orderIndex: values.orderIndex || 0,
                 } as Module);
             } else {
-                await addModule({
-                    ...values,
-                    courseId,
-                    orderIndex: values.orderIndex || 0,
-                } as Omit<Module, "id">);
+                await addModule(payload as Omit<Module, "id">);
             }
             onSuccess();
         },
     });
 
     return (
-        <form onSubmit={formik.handleSubmit} className="space-y-4 p-4 border rounded-xl bg-gray-50 dark:bg-gray-900/50">
-            <h4 className="text-lg font-semibold text-gray-800 dark:text-white">
-                {initialData?.id ? "Modulni tahrirlash" : "Yangi modul qo'shish"}
-            </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <form
+            onSubmit={formik.handleSubmit}
+            className="space-y-4"
+        >
+            <div className="space-y-4 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/40">
                 <div>
-                    <Label htmlFor="name">Modul Nomi</Label>
-                    <Input type="text" formik={formik as any} name="name" placeholder="Masalan: React Asoslari" />
+                    <Label htmlFor="name">Modul nomi</Label>
+                    <Input
+                        type="text"
+                        formik={formik}
+                        name="name"
+                        placeholder="Masalan: Sotuv asoslari"
+                        className="rounded-2xl border-gray-300 bg-white dark:bg-slate-950"
+                    />
                 </div>
-                <div>
-                    <Label htmlFor="price">Modul Narxi (UZS)</Label>
-                    <Input type="number" formik={formik as any} name="price" placeholder="Masalan: 500000" />
-                </div>
-            </div>
-            <div>
-                <Label htmlFor="description">Izohi</Label>
-                <textarea
-                    id="description"
-                    name="description"
-                    rows={3}
-                    className="w-full rounded-[20px] border border-gray-300 bg-transparent px-4 py-2.5 text-sm placeholder:text-gray-400 focus:border-brand-300 focus:ring-3 focus:ring-brand-500/20 dark:border-gray-700 dark:text-white/90"
-                    placeholder="Modul haqida batafsil ma'lumot kiriting..."
-                    value={formik.values.description}
-                    onChange={formik.handleChange}
-                    onBlur={formik.handleBlur}
+
+                <Input
+                    type="number"
+                    formik={formik}
+                    name="price"
+                    placeholder="0"
+                    label="Narx (UZS)"
+                    className="rounded-2xl border-gray-300 bg-white dark:bg-slate-950"
                 />
-                {formik.errors.description && formik.touched.description && (
-                    <p className="mt-1.5 text-xs text-error-500">{formik.errors.description}</p>
-                )}
             </div>
-            <div className="flex justify-end gap-3">
-                <Button type="button" variant="outline" onClick={onCancel}>
+
+            <div className="flex items-center justify-end gap-3 pt-1">
+                <Button
+                    type="button"
+                    variant="outline"
+                    onClick={onCancel}
+                    className="h-11 rounded-xl px-5 text-sm font-medium"
+                >
                     Bekor qilish
                 </Button>
-                <Button type="submit" variant="primary" isPending={isAdding || isUpdating}>
-                    Saqlash
+                <Button
+                    type="submit"
+                    variant="primary"
+                    isPending={isAdding || isUpdating}
+                    disabled={isAdding || isUpdating}
+                    className="h-11 rounded-xl px-5 text-sm font-medium"
+                >
+                    {isEditing ? "Saqlash" : "Yaratish"}
                 </Button>
             </div>
         </form>

@@ -2,7 +2,7 @@ import {useFormik} from "formik";
 import * as Yup from "yup";
 import PhoneNumberInput from "../../components/form/PhoneNumberInput.tsx";
 import CommonButton from "../ui/button/AuthButton.tsx";
-import {useNavigate} from "react-router";
+import {useNavigate} from "react-router-dom";
 
 export default function ForgotPasswordForm() {
 

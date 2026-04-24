@@ -9,7 +9,7 @@ interface IPhoneNumberInputProps<T> {
     className?: string;
 }
 
-const PhoneNumberInput = <T extends Record<string, any>>({
+const PhoneNumberInput = <T extends Record<string, unknown>>({
                                                              label = "",
                                                              name,
                                                              formik,
@@ -20,7 +20,7 @@ const PhoneNumberInput = <T extends Record<string, any>>({
             {label && (
                 <label
                     htmlFor={name as string}
-                    className="block text-base font-medium text-gray-200 mb-2"
+                    className="mb-2 block text-base font-medium text-gray-200 dark:text-slate-200"
                 >
                     {label}
                 </label>
@@ -40,7 +40,7 @@ const PhoneNumberInput = <T extends Record<string, any>>({
       <FlagUz width={24} height={24}/>
     </span>
                 )}
-                className="w-full rounded-full border border-gray-400 bg-transparent px-5 py-3 text-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full rounded-full border border-gray-400 bg-transparent px-5 py-3 text-lg text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-slate-600 dark:bg-slate-900/40 dark:text-slate-100 dark:placeholder:text-slate-500"
             />
 
             {formik.errors[name] && formik.touched[name] ? (

@@ -6,6 +6,7 @@ type ImportLessonQuizPayload = {
     moduleId?: string;
     file: File;
     useModuleEndpoint?: boolean;
+    timeLimitMinutes?: number;
 };
 
 export const importLessonQuiz = async ({
@@ -13,10 +14,14 @@ export const importLessonQuiz = async ({
     moduleId,
     file,
     useModuleEndpoint,
+    timeLimitMinutes,
 }: ImportLessonQuizPayload) => {
     try {
         const formData = new FormData();
         formData.append("file", file);
+        if (typeof timeLimitMinutes === "number" && timeLimitMinutes > 0) {
+            formData.append("timeLimitMinutes", String(timeLimitMinutes));
+        }
 
         const endpoint = useModuleEndpoint
             ? `/module-tests/module/${moduleId}/import`

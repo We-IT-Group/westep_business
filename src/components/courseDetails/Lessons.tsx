@@ -1,34 +1,36 @@
-import {useNavigate} from "react-router";
 import {useGetLessons} from "../../api/lessons/useLesson.ts";
 import {Lesson} from "../../types/types.ts";
 import LessonCard from "./LessonCard.tsx";
-import {useEffect} from "react";
 
-function Lessons({id, openLesson, courseId}: { id: string, openLesson: boolean, courseId: string }) {
+function Lessons({id, openLesson, courseId, activeSession, onSelectionChange}: { 
+    id: string, 
+    openLesson: boolean, 
+    courseId: string,
+    activeSession: { type: string, id: string | null, moduleId?: string | null },
+    onSelectionChange: (type: string, id: string | null, meta?: { moduleId?: string | null }) => void
+}) {
     const {data, isPending, isError, error} = useGetLessons(id, openLesson);
-    const navigate = useNavigate();
 
-
-    const onSelect = (lessonId: string) => {
-        navigate(`/courses/details/${courseId}/updateLesson/${lessonId}`, {state: {moduleId: id}});
+    const onSelect = (lessonId: string, moduleId: string) => {
+        onSelectionChange('lesson', lessonId, {moduleId});
     }
 
-    useEffect(() => {
-
-    }, [])
-
     if (!openLesson) return null;
-    if (isPending) return <p className="text-sm text-gray-500">Loading lessons...</p>;
-    if (isError) return <p className="text-sm text-red-500">Error: {error.message}</p>;
+    if (isPending) return <p className="text-sm text-gray-500 ml-8">Loading lessons...</p>;
+    if (isError) return <p className="text-sm text-red-500 ml-8">Error: {error.message}</p>;
 
 
     return (
-        <div>
-            <div>
-                {data.map((lesson: Lesson) => (
-                    <LessonCard key={lesson.id} onSelect={onSelect} lesson={lesson} courseId={courseId}/>
-                ))}
-            </div>
+        <div className="space-y-1">
+            {data.map((lesson: Lesson) => (
+                <LessonCard 
+                    key={lesson.id} 
+                    onSelect={onSelect} 
+                    lesson={lesson} 
+                    courseId={courseId}
+                    activeSession={activeSession}
+                />
+            ))}
         </div>
     );
 }

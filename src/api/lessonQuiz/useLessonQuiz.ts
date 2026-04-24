@@ -10,6 +10,8 @@ export const useImportLessonQuiz = (lessonId: string | undefined) => {
             await Promise.all([
                 qc.invalidateQueries({queryKey: ["lesson", lessonId]}),
                 qc.invalidateQueries({queryKey: ["lessons"]}),
+                qc.invalidateQueries({queryKey: ["lesson-review-tasks", lessonId]}),
+                qc.invalidateQueries({queryKey: ["lesson-quiz-results-by-lesson", lessonId]}),
             ]);
         },
     });

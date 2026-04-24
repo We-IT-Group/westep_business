@@ -1,33 +1,28 @@
-import {Plus} from "lucide-react";
-import {useAddModule, useGetModules} from "../../api/module/useModule.ts";
-import {Lesson, Module} from "../../types/types.ts";
+import {Plus, Database, Layers} from "lucide-react";
+import {useGetModules} from "../../api/module/useModule.ts";
+import {Module} from "../../types/types.ts";
 import ModuleCard from "./ModuleCard.tsx";
 import {Button} from "../ui/button.tsx";
-import Spinner from "../common/Spinner.tsx";
 import {useState} from "react";
+import {showSuccessToast} from "../../utils/toast.tsx";
+import ModuleForm from "../courses/ModuleForm.tsx";
+import {Dialog, DialogContent, DialogHeader, DialogTitle} from "../ui/dialog.tsx";
 
-function CourseModulesBar({id}: { id: string | undefined }) {
+function CourseModulesBar({ 
+    id, 
+    activeSession, 
+    onSelectionChange 
+}: { 
+    id: string | undefined, 
+    activeSession: { type: string, id: string | null, moduleId?: string | null },
+    onSelectionChange: (type: string, id: string | null, meta?: { moduleId?: string | null }) => void
+}) {
     const {data} = useGetModules(id);
-    const {mutateAsync: addModule, isPending: isAdding} = useAddModule();
-
     const modules: (Module & { lessons?: unknown[] })[] = data || [];
     const [expandedModules, setExpandedModules] = useState<Set<string>>(
         new Set(modules.map((m) => m.id))
     );
-    const [selectedLesson, setSelectedLesson] = useState<{ moduleId: string; lesson: Lesson } | null>(
-        null
-    );
-
-    async function onAddModule() {
-        await addModule(
-            {
-                name: "New Modules " + modules.length + 1,
-                description: "",
-                price: 0,
-                courseId: id || "",
-                orderIndex: modules.length + 1
-            });
-    }
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
 
     const toggleModule = (moduleId: string) => {
         setExpandedModules((prev) => {
@@ -69,59 +64,57 @@ function CourseModulesBar({id}: { id: string | undefined }) {
 
 
     return (
-        <div>
-            <div className="p-4 border-b border-gray-200 bg-white">
+        <div className="flex flex-col h-full">
+            <div className="p-5 border-b border-slate-100 bg-white/50 backdrop-blur-sm">
                 <Button
-                    onClick={onAddModule}
-                    disabled={isAdding}
-                    className="w-full bg-green-600 hover:bg-green-700 text-white gap-2 h-11 shadow-md hover:shadow-lg transition-all relative"
+                    onClick={() => setIsCreateModalOpen(true)}
+                    className="h-11 w-full gap-2.5 rounded-xl border border-blue-200 bg-blue-600 text-white shadow-lg shadow-blue-100 transition-all hover:-translate-y-0.5 hover:bg-blue-700 active:translate-y-0"
                 >
-                    {
-                        isAdding ? <Spinner/> : <Plus className="w-5 h-5"/>
-
-                    }
-                    Add Module
-                    <span className={'absolute right-5'}>
+                    <Plus className="w-4 h-4"/>
+                    <span className="font-black text-[11px] uppercase tracking-widest">Add Module</span>
+                    <div className="ml-auto rounded-md bg-white/20 px-2 py-0.5 text-[9px] font-black">
                         {modules.length}
-                    </span>
+                    </div>
                 </Button>
             </div>
 
-
-            <div className="p-4 space-y-1">
+            <div className="flex-1 overflow-y-auto p-4 space-y-3 custom-scrollbar">
                 {modules.length === 0 ? (
-                    <div className="py-16 px-6 text-center">
-                        <div
-                            className="w-20 h-20 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                            <span className="text-4xl">📚</span>
+                    <div className="py-20 px-8 text-center flex flex-col items-center">
+                        <div className="relative mb-6">
+                            <div className="w-24 h-24 bg-blue-50 rounded-[32px] flex items-center justify-center animate-pulse">
+                                <Database className="w-10 h-10 text-blue-500 opacity-20" />
+                            </div>
+                            <div className="absolute -bottom-2 -right-2 w-12 h-12 bg-white rounded-2xl shadow-lg border border-slate-100 flex items-center justify-center">
+                                <Plus className="w-6 h-6 text-emerald-500" />
+                            </div>
                         </div>
-                        <h3 className="font-semibold text-gray-900 mb-2 text-lg">No modules yet</h3>
-                        <p className="text-sm text-gray-600 mb-4">
-                            Start building your course by adding your first module
+                        <h3 className="font-black text-slate-900 mb-3 text-xl tracking-tight">Empty Curriculum</h3>
+                        <p className="text-sm text-slate-500 mb-8 font-medium leading-relaxed">
+                            No modules found. Start building your educational structure by adding your first segment.
                         </p>
                         <Button
-                            onClick={onAddModule}
-                            className="bg-green-600 hover:bg-green-700 text-white gap-2"
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white h-12 px-6 rounded-xl gap-2 shadow-lg shadow-emerald-100 font-bold"
                         >
-                            <Plus className="w-4 h-4"/>
-                            Add First Module
+                            <Plus className="w-5 h-5"/>
+                            Create First Module
                         </Button>
                     </div>
                 ) : (
                     <>
-                        <div className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3 px-3">
-                            Course Structure
+                        <div className="flex items-center gap-2 mb-4 px-1">
+                            <Layers className="w-3 h-3 text-slate-400" />
+                            <div className="text-[9px] font-black text-slate-400 uppercase tracking-widest">
+                                Structure Architecture
+                            </div>
                         </div>
                         {modules.map((item: Module, index: number) => (
                             <ModuleCard module={item} key={item.id} index={index}
                                         isExpanded={expandedModules.has(item.id)}
                                         onToggle={() => toggleModule(item.id)}
-                                        selectedLesson={selectedLesson}
-                                // onAddLesson={onAddLesson}
-                                // onDeleteModule={onDeleteModule}
-                                // onDeleteLesson={handleUpdateLesson}
-                                // onUpdateLessonTitle={onUpdateLessonTitle}
-                                // onSelectLesson={onSelectLesson}
+                                        activeSession={activeSession}
+                                        onSelectionChange={onSelectionChange}
 
                             />
                         ))}
@@ -130,6 +123,26 @@ function CourseModulesBar({id}: { id: string | undefined }) {
 
 
             </div>
+
+            <Dialog open={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+                <DialogContent className="max-w-[380px] rounded-2xl border border-slate-200 bg-white p-6 shadow-[0_18px_40px_rgba(15,23,42,0.12)]">
+                    <div>
+                        <DialogHeader className="mb-5 text-center">
+                            <DialogTitle className="text-xl font-semibold text-slate-950">Yangi modul</DialogTitle>
+                        </DialogHeader>
+
+                        <ModuleForm
+                            courseId={id || ""}
+                            suggestedOrderIndex={modules.length + 1}
+                            onSuccess={() => {
+                                setIsCreateModalOpen(false);
+                                showSuccessToast("Yangi modul muvaffaqiyatli qo'shildi");
+                            }}
+                            onCancel={() => setIsCreateModalOpen(false)}
+                        />
+                    </div>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

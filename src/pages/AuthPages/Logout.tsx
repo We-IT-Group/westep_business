@@ -1,5 +1,5 @@
 import {useEffect} from "react";
-import {Navigate} from "react-router";
+import {Navigate} from "react-router-dom";
 import {useLogout} from "../../api/auth/useAuth.ts";
 
 

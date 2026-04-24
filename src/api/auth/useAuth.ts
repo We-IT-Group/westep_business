@@ -9,10 +9,15 @@ import {
     sendOtpCode,
     verifyCode
 } from "./authApi.ts";
-import {useNavigate} from "react-router";
-import {getItem} from "../../utils/utils.ts";
+import {useNavigate} from "react-router-dom";
+import {getItem, removeItem} from "../../utils/utils.ts";
 import {useToast} from "../../hooks/useToast.tsx";
 import {showErrorToast} from "../../utils/toast.tsx";
+
+export const isTeacherSideRole = (roleName?: string) => {
+    const normalized = (roleName || "").toUpperCase();
+    return normalized.includes("BUSINESS_ADMIN") || normalized.includes("TEACHER");
+};
 
 export const useUser = () =>
     useQuery({
@@ -35,7 +40,24 @@ export const useLogin = () => {
     return useMutation({
         mutationFn: login,
         onSuccess: async () => {
-            navigate("/")
+            try {
+                const user = await getCurrentUser();
+
+                if (!isTeacherSideRole(user?.roleName)) {
+                    removeItem("accessToken");
+                    removeItem("refreshToken");
+                    toast.error("Bu panelga faqat Business Admin yoki Teacher kira oladi.");
+                    navigate("/login", {replace: true});
+                    return;
+                }
+
+                navigate("/", {replace: true});
+            } catch (error) {
+                removeItem("accessToken");
+                removeItem("refreshToken");
+                toast.error(error instanceof Error ? error.message : "Login amalga oshmadi.");
+                navigate("/login", {replace: true});
+            }
         },
         onError: (error: Error) => {
             toast.error(error.message);
@@ -122,7 +144,7 @@ export const useVerifyCode = () => {
             }
         },
         onError: (error) => {
-            return error
+            showErrorToast(error, "Kod tasdiqlanmadi");
         },
     });
 };

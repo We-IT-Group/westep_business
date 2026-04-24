@@ -1,13 +1,16 @@
 import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {
+    deleteDiscussion,
     createDiscussionReply,
     downloadAttachmentBlob,
     getHomeworkSubmissionsReview,
     getLessonDiscussions,
     getLessonTasksReview,
+    getQuizResultsByLesson,
     getQuizResultsByTask,
     getQuizSessionDetail,
     reviewHomeworkSubmission,
+    updateDiscussion,
 } from "./lessonReviewApi.ts";
 import {showErrorToast, showSuccessToast} from "../../utils/toast.tsx";
 
@@ -22,6 +25,9 @@ export const homeworkSubmissionsKey = (taskId: string) =>
 
 export const quizResultsKey = (taskId: string) =>
     ["lesson-quiz-results", taskId] as const;
+
+export const lessonQuizResultsKey = (lessonId: string) =>
+    ["lesson-quiz-results-by-lesson", lessonId] as const;
 
 export const quizSessionDetailKey = (sessionId: string) =>
     ["lesson-quiz-session", sessionId] as const;
@@ -47,6 +53,41 @@ export const useReplyDiscussion = (lessonId?: string) => {
         },
         onError: (error) => {
             showErrorToast(error, "Reply yuborilmadi");
+        },
+    });
+};
+
+export const useUpdateDiscussion = (lessonId?: string) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: ({commentId, content}: {commentId: string; content: string}) =>
+            updateDiscussion(commentId, {content}),
+        onSuccess: async () => {
+            if (lessonId) {
+                await queryClient.invalidateQueries({queryKey: lessonDiscussionsKey(lessonId)});
+            }
+            showSuccessToast("Muhokama yangilandi.");
+        },
+        onError: (error) => {
+            showErrorToast(error, "Muhokamani yangilab bo'lmadi");
+        },
+    });
+};
+
+export const useDeleteDiscussion = (lessonId?: string) => {
+    const queryClient = useQueryClient();
+
+    return useMutation({
+        mutationFn: (commentId: string) => deleteDiscussion(commentId),
+        onSuccess: async () => {
+            if (lessonId) {
+                await queryClient.invalidateQueries({queryKey: lessonDiscussionsKey(lessonId)});
+            }
+            showSuccessToast("Muhokama o'chirildi.");
+        },
+        onError: (error) => {
+            showErrorToast(error, "Muhokamani o'chirib bo'lmadi");
         },
     });
 };
@@ -97,6 +138,13 @@ export const useQuizResults = (taskId?: string) =>
         queryKey: ["lesson-quiz-results", taskId],
         queryFn: () => getQuizResultsByTask(taskId || ""),
         enabled: !!taskId,
+    });
+
+export const useQuizResultsByLesson = (lessonId?: string) =>
+    useQuery({
+        queryKey: ["lesson-quiz-results-by-lesson", lessonId],
+        queryFn: () => getQuizResultsByLesson(lessonId || ""),
+        enabled: !!lessonId,
     });
 
 export const useQuizSessionDetail = (sessionId?: string, enabled = true) =>

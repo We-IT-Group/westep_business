@@ -11,6 +11,7 @@ export const useCreateLessonHomework = (lessonId: string | undefined) => {
             await Promise.all([
                 qc.invalidateQueries({queryKey: ["lesson", lessonId]}),
                 qc.invalidateQueries({queryKey: ["lessons"]}),
+                qc.invalidateQueries({queryKey: ["lesson-review-tasks", lessonId]}),
             ]);
         },
         onError: (error) => {
@@ -28,6 +29,7 @@ export const useCreateLessonResource = (lessonId: string | undefined) => {
             await Promise.all([
                 qc.invalidateQueries({queryKey: ["lesson", lessonId]}),
                 qc.invalidateQueries({queryKey: ["lessons"]}),
+                qc.invalidateQueries({queryKey: ["lesson-review-tasks", lessonId]}),
             ]);
         },
         onError: (error) => {

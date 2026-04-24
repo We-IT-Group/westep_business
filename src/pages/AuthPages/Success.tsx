@@ -1,7 +1,7 @@
 import AuthLayout from "../../layout/AuthLayout.tsx";
 import CommonButton from "../../components/ui/button/AuthButton.tsx";
 import {SuccessIcon} from "../../icons";
-import {useNavigate} from "react-router";
+import {useNavigate} from "react-router-dom";
 
 function Success() {
     const navigate = useNavigate();

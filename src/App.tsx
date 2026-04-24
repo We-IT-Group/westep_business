@@ -1,4 +1,4 @@
-import {BrowserRouter as Router} from "react-router";
+import {BrowserRouter as Router} from "react-router-dom";
 import {ScrollToTop} from "./components/common/ScrollToTop";
 import Route from "./route";
 import {ToastProvider} from "./context/ToastProvider.tsx";

@@ -6,10 +6,16 @@ import {authProtectedRoutes, publicRoutes} from './allRoutes';
 import AuthProtected from "./AuthProtected.tsx";
 import AppLayout from "../layout/AppLayout.tsx";
 
+type AppRoute = {
+    index?: boolean;
+    path?: string;
+    element: React.ReactNode;
+    children?: AppRoute[];
+};
 
 const Index = () => {
 
-    const renderRoutes = (routes: any[]) =>
+    const renderRoutes = (routes: AppRoute[]) =>
         routes.map((route, idx) => (
             <Route
                 key={idx}

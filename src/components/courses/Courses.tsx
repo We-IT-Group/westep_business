@@ -1,11 +1,11 @@
-import {useGetCourses} from "../../api/courses/useCourse.ts";
+import {useGetMyCourses} from "../../api/courses/useCourse.ts";
 import CourseCard from "./CourseCard.tsx";
 import {Course} from "../../types/types.ts";
 import AddCourse from "./AddCourse.tsx";
 import {ArrowRightIcon} from "../../icons";
 
 function Courses() {
-    const {data} = useGetCourses()
+    const {data} = useGetMyCourses()
     return (
         <div>
             <div className={'flex justify-between items-center'}>

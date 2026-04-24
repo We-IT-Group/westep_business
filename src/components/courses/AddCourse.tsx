@@ -2,6 +2,7 @@ import {useEffect, useRef, useState} from "react";
 import CommonFileInput, {CommonFileInputRef} from "../form/input/CommonFileInput.tsx";
 import {useAddCourse} from "../../api/courses/useCourse.ts";
 import {useUser} from "../../api/auth/useAuth.ts";
+import {useTeacherProfileMe} from "../../api/teacherProfile/useTeacherProfile.ts";
 import {Course} from "../../types/types.ts";
 import {useFormik} from "formik";
 import * as Yup from "yup";
@@ -13,6 +14,8 @@ function AddCourse() {
 
     const {mutateAsync: addCourse, isSuccess, isPending} = useAddCourse();
     const {data: user} = useUser();
+    const {data: teacherProfile} = useTeacherProfileMe((user?.roleName || "").toUpperCase().includes("TEACHER"));
+    const resolvedBusinessId = user?.businessId || teacherProfile?.businessId || "";
 
     const [initialValues, setInitialValues] = useState<Pick<Course, "name" | "description" | "attachmentId">>({
         name: "",
@@ -44,11 +47,15 @@ function AddCourse() {
                 attachmentId: ""
             })
         }
-    }, [isSuccess]);
+    }, [formik, isSuccess]);
 
     const handleSubmit = async (fileId?: string | null) => {
         if (fileId) {
-            await addCourse({...formik.values, businessId: user.businessId, attachmentId: fileId});
+            await addCourse({
+                ...formik.values,
+                ...(resolvedBusinessId ? {businessId: resolvedBusinessId} : {}),
+                attachmentId: fileId,
+            });
         }
     }
     return (

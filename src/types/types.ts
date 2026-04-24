@@ -32,6 +32,7 @@ export interface Course extends Common {
     name: string,
     description: string,
     isPublished: boolean,
+    active: boolean,
     publishedAt: string,
     businessId: string
     attachmentId?: string | null,
@@ -40,7 +41,7 @@ export interface Course extends Common {
 
 export interface Module extends Common {
     name: string,
-    description: string,
+    description?: string,
     courseId: string
     orderIndex: number | null,
     price: number,
@@ -97,4 +98,11 @@ export interface TrackingLinkPayload {
     utmMedium?: string;
     utmCampaign?: string;
     expiresAt?: string | null;
+}
+
+export interface NotificationItem extends Common {
+    title: string;
+    message: string;
+    type?: string;
+    isRead: boolean;
 }
