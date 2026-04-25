@@ -1,13 +1,16 @@
 import axios from "axios";
 import { getItem, removeItem, setItem } from "../utils/utils.ts";
 
+const normalizeUrl = (value: string) => value.trim().replace(/\/+$/, "");
+const defaultDevApiUrl = "http://localhost:8080/api";
+const defaultProdApiUrl = "https://westep.uz/api";
 
-export const baseUrl = "http://localhost:8080/api"
-export const baseUrlImage = "http://192.168.1.237:8080/api"
+export const baseUrl = normalizeUrl(
+    import.meta.env.VITE_API_BASE_URL ||
+    (import.meta.env.PROD ? defaultProdApiUrl : defaultDevApiUrl)
+);
+export const baseUrlImage = normalizeUrl(import.meta.env.VITE_ASSET_BASE_URL || baseUrl);
 export const apiBaseOrigin = baseUrl.replace(/\/api$/, "");
-
-// export const baseUrl = "https://westep.uz/api"
-// export const baseUrlImage = "https://westep.uz"
 
 const apiClient = axios.create({
     baseURL: baseUrl,
