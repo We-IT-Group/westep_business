@@ -115,14 +115,6 @@ const CommonFileInput = forwardRef<CommonFileInputRef, Props>(
             }
         };
 
-        const handleRemove = () => {
-            setFile(null);
-            setPreviewUrl(null);
-            setSelectedFile(null)
-            onChange?.(null);
-        };
-
-
         useImperativeHandle(ref, () => ({
             saveFile: async () => {
                 if (selectedFile) {

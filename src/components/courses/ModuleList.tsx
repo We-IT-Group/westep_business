@@ -85,7 +85,7 @@ export default function ModuleList({courseId}: ModuleListProps) {
                 </div>
             ) : (
                 <div className="space-y-3">
-                    {modules.map((module, index) => (
+                    {modules.map((module: Module, index: number) => (
                         <div
                             key={module.id}
                             className="rounded-[24px] border border-slate-200 bg-slate-50/80 p-5 shadow-sm"

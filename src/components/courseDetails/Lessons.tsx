@@ -6,8 +6,16 @@ function Lessons({id, openLesson, courseId, activeSession, onSelectionChange}: {
     id: string, 
     openLesson: boolean, 
     courseId: string,
-    activeSession: { type: string, id: string | null, moduleId?: string | null },
-    onSelectionChange: (type: string, id: string | null, meta?: { moduleId?: string | null }) => void
+    activeSession: {
+        type: "lesson" | "module" | "course" | "pricing" | "analytics" | "students" | "homework" | "discussions" | "quizzes" | "none",
+        id: string | null,
+        moduleId?: string | null
+    },
+    onSelectionChange: (
+        type: "lesson" | "module" | "course" | "pricing" | "analytics" | "students" | "homework" | "discussions" | "quizzes" | "none",
+        id: string | null,
+        meta?: { moduleId?: string | null }
+    ) => void
 }) {
     const {data, isPending, isError, error} = useGetLessons(id, openLesson);
 

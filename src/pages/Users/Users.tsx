@@ -292,7 +292,7 @@ export default function Users() {
                                         >
                                             <div className="flex min-w-0 items-center gap-4">
                                                 <div className={`flex h-12 w-12 items-center justify-center rounded-[18px] ${isAssistant ? "bg-blue-50 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200" : "bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200"}`}>
-                                                    {isAssistant ? <Users className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
+                                                    {isAssistant ? <UsersIcon className="h-5 w-5" /> : <ShieldCheck className="h-5 w-5" />}
                                                 </div>
                                                 <div className="min-w-0">
                                                     <div className="text-base font-black tracking-[-0.03em] text-slate-950 dark:text-slate-100">

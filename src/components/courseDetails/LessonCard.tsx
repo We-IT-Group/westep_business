@@ -9,7 +9,11 @@ interface LessonCardProps {
     lesson: Lesson;
     courseId: string;
     onSelect: (lessonId: string, moduleId: string) => void;
-    activeSession: { type: string; id: string | null; moduleId?: string | null };
+    activeSession: {
+        type: "lesson" | "module" | "course" | "pricing" | "analytics" | "students" | "homework" | "discussions" | "quizzes" | "none";
+        id: string | null;
+        moduleId?: string | null;
+    };
 }
 
 function LessonCard({lesson, courseId, onSelect, activeSession}: LessonCardProps) {

@@ -19,7 +19,6 @@ const Index = () => {
         routes.map((route, idx) => (
             <Route
                 key={idx}
-                index={route.index}
                 path={route.path}
                 element={route.element}
             >

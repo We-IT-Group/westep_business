@@ -158,9 +158,9 @@ export default function Students() {
                                 </p>
                             </div>
                             <div className="rounded-[18px] border border-slate-200 bg-slate-50/80 p-4 dark:border-slate-800 dark:bg-slate-900/70">
-                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Bo‘lim</p>
+                                <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">Business</p>
                                 <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">
-                                    {selectedCourse.categoryName || "Belgilanmagan"}
+                                    {selectedCourse.businessId || "Belgilanmagan"}
                                 </p>
                             </div>
                         </div>

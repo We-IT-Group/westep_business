@@ -23,7 +23,7 @@ import {
     LessonTaskReview,
     QuizResultSummary,
 } from "../../api/lessonReview/lessonReviewApi.ts";
-import {Lesson} from "../../types/types.ts";
+import {Lesson, Module} from "../../types/types.ts";
 
 type StudentTab = "homework" | "quiz" | "message";
 
@@ -65,7 +65,7 @@ export default function CourseStudentsSection({courseId}: {courseId: string}) {
     const [activeTab, setActiveTab] = useState<StudentTab>("homework");
 
     const lessonQueries = useQueries({
-        queries: modules.map((module) => ({
+        queries: modules.map((module: Module) => ({
             queryKey: ["lessons", module.id],
             queryFn: () => getAllLessons(module.id),
             enabled: modules.length > 0,

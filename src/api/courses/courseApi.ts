@@ -5,6 +5,13 @@ import {parseApiError} from "../../utils/apiError.ts";
 type addCourse = Pick<Course, "name" | "description" | "id" | "attachmentId"> & {
     businessId?: string;
 };
+type CourseRecord = Partial<Course> & {
+    id: string;
+    name: string;
+    isActive?: boolean;
+    active?: boolean;
+};
+
 type CoursesResponse =
     | Course[]
     | {
@@ -16,7 +23,7 @@ type CoursesResponse =
         isActive?: boolean;
     };
 
-const isCourseRecord = (value: unknown): value is Partial<Course> & {id: string; name: string} => (
+const isCourseRecord = (value: unknown): value is CourseRecord => (
     Boolean(
         value
         && typeof value === "object"

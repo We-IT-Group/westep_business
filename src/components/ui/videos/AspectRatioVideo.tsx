@@ -12,7 +12,7 @@ const AspectRatioVideo: React.FC<AspectRatioVideoProps> = ({
     return (
         <div className={`aspect-${aspectRatio} overflow-hidden rounded-lg`}>
             <iframe
-                src="https://www.youtube.com/embed/b4pWCMGTIxg"
+                src={videoUrl}
                 title={title}
                 frameBorder="0"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"

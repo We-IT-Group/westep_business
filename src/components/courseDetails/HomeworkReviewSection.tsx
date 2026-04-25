@@ -14,7 +14,8 @@ import {
     LoaderCircle,
     Star
 } from "lucide-react";
-import {Lesson} from "../../types/types.ts";
+import {Lesson, Module} from "../../types/types.ts";
+import {HomeworkSubmissionReview} from "../../api/lessonReview/lessonReviewApi.ts";
 import moment from "moment";
 
 export default function HomeworkReviewSection({courseId}: { courseId: string }) {
@@ -23,7 +24,8 @@ export default function HomeworkReviewSection({courseId}: { courseId: string }) 
     const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
     // Flatten all lessons from modules
-    const allLessons = modules?.flatMap(m => (m as any).lessons as Lesson[]) || [];
+    const allLessons = ((modules as Array<Module & {lessons?: Lesson[]}> | undefined)
+        ?.flatMap((module: Module & {lessons?: Lesson[]}) => module.lessons || [])) || [];
 
     const handleSelectLesson = (lessonId: string) => {
         setSelectedLessonId(lessonId);
@@ -46,7 +48,7 @@ export default function HomeworkReviewSection({courseId}: { courseId: string }) 
                                 <div key={i} className="h-16 bg-slate-100 animate-pulse rounded-2xl" />
                             ))
                         ) : allLessons.length > 0 ? (
-                            allLessons.map((lesson) => (
+                            allLessons.map((lesson: Lesson) => (
                                 <button
                                     key={lesson.id}
                                     onClick={() => handleSelectLesson(lesson.id)}
@@ -96,7 +98,7 @@ function SubmissionsList({lessonId, onSelectTask, selectedTaskId}: { lessonId: s
     const {data: tasks, isLoading: isTasksLoading} = useLessonTasksReview(lessonId);
     
     // Filter only HOMEWORK tasks
-    const homeworkTasks = tasks?.filter(t => t.type === "HOMEWORK") || [];
+    const homeworkTasks = tasks?.filter((task) => task.type === "HOMEWORK") || [];
 
     if (isTasksLoading) {
         return (
@@ -168,7 +170,7 @@ function TaskSubmissions({taskId}: { taskId: string }) {
         );
     }
 
-    const currentReviewing = submissions.find(s => s.submissionId === reviewingSubmissionId);
+    const currentReviewing = submissions.find((submission) => submission.submissionId === reviewingSubmissionId);
 
     return (
         <div className="space-y-6">
@@ -240,7 +242,7 @@ function TaskSubmissions({taskId}: { taskId: string }) {
     );
 }
 
-function ReviewModal({submission, onClose, taskId}: { submission: any, onClose: () => void, taskId: string }) {
+function ReviewModal({submission, onClose, taskId}: { submission: HomeworkSubmissionReview, onClose: () => void, taskId: string }) {
     const {mutateAsync: review, isPending} = useReviewHomeworkSubmission(taskId);
     const {mutateAsync: download} = useDownloadAttachment();
     

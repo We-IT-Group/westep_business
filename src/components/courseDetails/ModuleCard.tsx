@@ -16,8 +16,16 @@ interface ModuleItemProps {
     index: number;
     isExpanded: boolean;
     onToggle: () => void;
-    activeSession: { type: string; id: string | null; moduleId?: string | null };
-    onSelectionChange: (type: string, id: string | null, meta?: { moduleId?: string | null }) => void;
+    activeSession: {
+        type: "lesson" | "module" | "course" | "pricing" | "analytics" | "students" | "homework" | "discussions" | "quizzes" | "none";
+        id: string | null;
+        moduleId?: string | null;
+    };
+    onSelectionChange: (
+        type: "lesson" | "module" | "course" | "pricing" | "analytics" | "students" | "homework" | "discussions" | "quizzes" | "none",
+        id: string | null,
+        meta?: { moduleId?: string | null }
+    ) => void;
 }
 
 function ModuleCard({module, onToggle, isExpanded, activeSession, onSelectionChange}: ModuleItemProps) {

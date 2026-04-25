@@ -15,7 +15,7 @@ import {
     ArrowLeft,
     Monitor
 } from "lucide-react";
-import {Lesson} from "../../types/types.ts";
+import {Lesson, Module} from "../../types/types.ts";
 import moment from "moment";
 
 export default function QuizAnalyticsSection({courseId}: { courseId: string }) {
@@ -25,7 +25,8 @@ export default function QuizAnalyticsSection({courseId}: { courseId: string }) {
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
 
     // Flatten all lessons from modules
-    const allLessons = modules?.flatMap(m => (m as any).lessons as Lesson[]) || [];
+    const allLessons = ((modules as Array<Module & {lessons?: Lesson[]}> | undefined)
+        ?.flatMap((module: Module & {lessons?: Lesson[]}) => module.lessons || [])) || [];
 
     const handleSelectLesson = (lessonId: string) => {
         setSelectedLessonId(lessonId);
@@ -53,7 +54,7 @@ export default function QuizAnalyticsSection({courseId}: { courseId: string }) {
                                 <div key={i} className="h-16 bg-slate-100 animate-pulse rounded-2xl" />
                             ))
                         ) : allLessons.length > 0 ? (
-                            allLessons.map((lesson) => (
+                            allLessons.map((lesson: Lesson) => (
                                 <button
                                     key={lesson.id}
                                     onClick={() => handleSelectLesson(lesson.id)}
@@ -108,7 +109,7 @@ function QuizTasksList({lessonId, onSelectTask, selectedTaskId, onSelectSession}
     const {data: tasks, isLoading: isTasksLoading} = useLessonTasksReview(lessonId);
     
     // Filter only QUIZ tasks
-    const quizTasks = tasks?.filter(t => t.type === "QUIZ") || [];
+    const quizTasks = tasks?.filter((task) => task.type === "QUIZ") || [];
 
     if (isTasksLoading) {
         return (

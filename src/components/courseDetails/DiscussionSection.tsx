@@ -1,6 +1,7 @@
 import {useState} from "react";
 import {useGetModules} from "../../api/module/useModule.ts";
 import {useLessonDiscussions, useReplyDiscussion} from "../../api/lessonReview/useLessonReview.ts";
+import {DiscussionThread} from "../../api/lessonReview/lessonReviewApi.ts";
 import {Button} from "../ui/button.tsx";
 import {
     MessageSquare, 
@@ -13,7 +14,7 @@ import {
     MessageCircle,
     Inbox
 } from "lucide-react";
-import {Lesson} from "../../types/types.ts";
+import {Lesson, Module} from "../../types/types.ts";
 import moment from "moment";
 
 export default function DiscussionSection({courseId}: { courseId: string }) {
@@ -21,7 +22,8 @@ export default function DiscussionSection({courseId}: { courseId: string }) {
     const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
 
     // Flatten all lessons from modules
-    const allLessons = modules?.flatMap(m => (m as any).lessons as Lesson[]) || [];
+    const allLessons = ((modules as Array<Module & {lessons?: Lesson[]}> | undefined)
+        ?.flatMap((module: Module & {lessons?: Lesson[]}) => module.lessons || [])) || [];
 
     return (
         <div className="flex flex-col h-full min-h-[700px]">
@@ -39,7 +41,7 @@ export default function DiscussionSection({courseId}: { courseId: string }) {
                                 <div key={i} className="h-16 bg-slate-100 animate-pulse rounded-2xl" />
                             ))
                         ) : allLessons.length > 0 ? (
-                            allLessons.map((lesson) => (
+                            allLessons.map((lesson: Lesson) => (
                                 <button
                                     key={lesson.id}
                                     onClick={() => setSelectedLessonId(lesson.id)}
@@ -122,7 +124,7 @@ function ThreadsList({lessonId}: { lessonId: string }) {
     );
 }
 
-function ThreadCard({thread, lessonId}: { thread: any, lessonId: string }) {
+function ThreadCard({thread, lessonId}: { thread: DiscussionThread, lessonId: string }) {
     const [isReplying, setIsReplying] = useState(false);
     const [replyContent, setReplyContent] = useState("");
     const {mutateAsync: sendReply, isPending} = useReplyDiscussion(lessonId);
@@ -159,7 +161,7 @@ function ThreadCard({thread, lessonId}: { thread: any, lessonId: string }) {
                 <div className="space-y-6">
                     {thread.replies && thread.replies.length > 0 && (
                         <div className="space-y-4 ml-6 pl-6 border-l-2 border-slate-100">
-                            {thread.replies.map((reply: any) => (
+                            {thread.replies.map((reply: DiscussionThread["replies"][number]) => (
                                 <div key={reply.id} className="flex flex-col gap-2">
                                     <div className="flex items-center gap-3">
                                         <span className="text-xs font-black text-slate-900">{reply.author}</span>

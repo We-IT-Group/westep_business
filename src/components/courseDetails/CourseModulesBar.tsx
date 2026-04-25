@@ -8,14 +8,26 @@ import {showSuccessToast} from "../../utils/toast.tsx";
 import ModuleForm from "../courses/ModuleForm.tsx";
 import {Dialog, DialogContent, DialogHeader, DialogTitle} from "../ui/dialog.tsx";
 
+type SessionType =
+    | "lesson"
+    | "module"
+    | "course"
+    | "pricing"
+    | "analytics"
+    | "students"
+    | "homework"
+    | "discussions"
+    | "quizzes"
+    | "none";
+
 function CourseModulesBar({ 
     id, 
     activeSession, 
     onSelectionChange 
 }: { 
     id: string | undefined, 
-    activeSession: { type: string, id: string | null, moduleId?: string | null },
-    onSelectionChange: (type: string, id: string | null, meta?: { moduleId?: string | null }) => void
+    activeSession: { type: SessionType, id: string | null, moduleId?: string | null },
+    onSelectionChange: (type: SessionType, id: string | null, meta?: { moduleId?: string | null }) => void
 }) {
     const {data} = useGetModules(id);
     const modules: (Module & { lessons?: unknown[] })[] = data || [];

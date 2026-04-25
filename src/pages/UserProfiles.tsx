@@ -193,7 +193,7 @@ export default function UserProfiles() {
                     </div>
 
                     <div className="mt-6 flex flex-wrap gap-3">
-                        {permissions.map((permission) => (
+                        {permissions.map((permission: string) => (
                             <div
                                 key={permission}
                                 className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"

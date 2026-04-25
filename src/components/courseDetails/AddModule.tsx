@@ -14,7 +14,7 @@ function AddModule({courseId, modulesLength}: { courseId: string | undefined, mo
     const [initialValues] = useState<Pick<Module, "name" | "description" | "courseId" | "price">>({
         name: "",
         description: "",
-        price: null,
+        price: 0,
         courseId: courseId || "",
     });
 

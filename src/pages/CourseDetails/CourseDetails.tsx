@@ -139,7 +139,7 @@ const CourseDetails = () => {
 
     useEffect(() => {
         if (!params.lessonId) return;
-        setActiveSession((prev) => ({type: "lesson", id: params.lessonId, moduleId: prev.moduleId ?? null}));
+        setActiveSession((prev) => ({type: "lesson", id: params.lessonId ?? null, moduleId: prev.moduleId ?? null}));
     }, [params.lessonId]);
 
     const courseImageUrl = localImageUrl || (course?.attachmentUrl
@@ -149,7 +149,7 @@ const CourseDetails = () => {
         : "");
 
     const totalLessons = useMemo(
-        () => modules.reduce((sum, module) => sum + (module.lessonCount || 0), 0),
+        () => modules.reduce((sum: number, module: {lessonCount?: number}) => sum + (module.lessonCount || 0), 0),
         [modules],
     );
 
