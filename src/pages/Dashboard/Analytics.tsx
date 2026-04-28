@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import {useUser} from "../../api/auth/useAuth.ts";
-import {useGetArchivedBusinessCourses, useGetBusinessCourses, useGetMyCourses} from "../../api/courses/useCourse.ts";
+import {useGetBusinessCourses, useGetInactiveBusinessCourses, useGetMyCourses} from "../../api/courses/useCourse.ts";
 import {useGetUsers} from "../../api/businessUser/useBusinessUser.ts";
 import {getCourseTrackingAnalytics} from "../../api/trackingLinks/trackingLinkApi.ts";
 
@@ -52,16 +52,16 @@ export default function Analytics() {
     const {data: user, isLoading: isUserLoading} = useUser();
     const {data: myCourses = [], isLoading: isMyCoursesLoading} = useGetMyCourses();
     const {data: businessCourses = [], isLoading: isBusinessCoursesLoading} = useGetBusinessCourses();
-    const {data: archivedCourses = [], isLoading: isArchivedCoursesLoading} = useGetArchivedBusinessCourses();
+    const {data: inactiveCourses = [], isLoading: isInactiveCoursesLoading} = useGetInactiveBusinessCourses();
     const {data: members = [], isLoading: isMembersLoading} = useGetUsers(user?.businessId);
 
     const portfolioCourses = useMemo(() => {
         const courseMap = new Map<string, (typeof businessCourses)[number]>();
-        [...myCourses, ...businessCourses, ...archivedCourses].forEach((course) => {
+        [...myCourses, ...businessCourses, ...inactiveCourses].forEach((course) => {
             courseMap.set(course.id, course);
         });
         return Array.from(courseMap.values());
-    }, [archivedCourses, businessCourses, myCourses]);
+    }, [businessCourses, inactiveCourses, myCourses]);
 
     const trackingAnalyticsQueries = useQueries({
         queries: businessCourses.map((course) => ({
@@ -76,7 +76,7 @@ export default function Analytics() {
         isUserLoading ||
         isMyCoursesLoading ||
         isBusinessCoursesLoading ||
-        isArchivedCoursesLoading ||
+        isInactiveCoursesLoading ||
         isMembersLoading ||
         trackingAnalyticsQueries.some((query) => query.isLoading);
 
@@ -134,7 +134,7 @@ export default function Analytics() {
         {
             label: "Barcha kurslar",
             value: portfolioCourses.length,
-            detail: `${liveCoursesCount} ta faol, ${archivedCourses.length} ta arxivda`,
+            detail: `${liveCoursesCount} ta active, ${inactiveCourses.length} ta non-active`,
             icon: BookOpen,
         },
         {
@@ -177,7 +177,7 @@ export default function Analytics() {
     const operatingFeed = [
         {
             title: "Kurs katalogi",
-            description: `${liveCoursesCount} live courses va ${archivedCourses.length} archived item business lifecycle ichida turibdi.`,
+            description: `${liveCoursesCount} active course va ${inactiveCourses.length} non-active item business lifecycle ichida turibdi.`,
         },
         {
             title: "Jamoa ijrosi",

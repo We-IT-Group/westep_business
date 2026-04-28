@@ -120,7 +120,7 @@ const CoursePlaceholder = ({courseName}: {courseName?: string}) => (
                 </div>
                 <div className="rounded-[24px] border border-slate-200 bg-white/90 p-5">
                     <div className="text-sm font-black text-slate-900">Publishing rhythm</div>
-                    <p className="mt-2 text-sm font-medium leading-6 text-slate-500">Draft, live, archived holatlar va release ops shu yerda boshqariladi.</p>
+                    <p className="mt-2 text-sm font-medium leading-6 text-slate-500">Draft, published va active holatlar shu yerda boshqariladi.</p>
                 </div>
                 <div className="rounded-[24px] border border-slate-200 bg-white/90 p-5">
                     <div className="text-sm font-black text-slate-900">Team notes</div>

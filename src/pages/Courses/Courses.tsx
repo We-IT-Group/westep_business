@@ -1,30 +1,29 @@
 import {useMemo, useState} from "react";
 import {Link} from "react-router-dom";
 import {
-    Archive,
     ArrowRight,
     BookOpen,
     Compass,
-    Layers3,
+    Power,
     Plus,
     Search,
     Sparkles,
 } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
-import {useGetArchivedBusinessCourses, useGetBusinessCourses, useGetMyCourses} from "../../api/courses/useCourse.ts";
+import {useGetBusinessCourses, useGetInactiveBusinessCourses, useGetMyCourses} from "../../api/courses/useCourse.ts";
 import {Button} from "../../components/ui/button/newButton.tsx";
 import CourseCard from "../../components/courses/CourseCard.tsx";
 import {Course} from "../../types/types.ts";
 import {CourseCreationFlow} from "../../components/courses/CourseCreationFlow.tsx";
 import {Input} from "../../components/ui/input.tsx";
 
-type CourseSource = "my" | "business" | "archived";
+type CourseSource = "my" | "business" | "inactive";
 type CourseFilter = "all" | "published" | "draft";
 
 const sourceOptions: Array<{ id: CourseSource; label: string; helper: string }> = [
     {id: "my", label: "Mening studiyam", helper: "O'zim yaratgan kurslar"},
-    {id: "business", label: "Biznes katalogi", helper: "Workspace ichidagi faol kurslar"},
-    {id: "archived", label: "Arxiv ombori", helper: "Saqlab qo'yilgan kurslar"},
+    {id: "business", label: "Biznes kurslari", helper: "Workspace ichidagi barcha kurslar"},
+    {id: "inactive", label: "Non-active", helper: "Public katalogda ko'rinmaydigan kurslar"},
 ];
 
 export default function Courses() {
@@ -35,12 +34,12 @@ export default function Courses() {
 
     const myResult = useGetMyCourses();
     const businessResult = useGetBusinessCourses();
-    const archivedResult = useGetArchivedBusinessCourses();
+    const inactiveResult = useGetInactiveBusinessCourses();
 
     const mergedPortfolio = useMemo(() => {
         const uniqueCourses = new Map<string, Course>();
 
-        [archivedResult.data || [], myResult.data || [], businessResult.data || []].forEach((courseList) => {
+        [inactiveResult.data || [], myResult.data || [], businessResult.data || []].forEach((courseList) => {
             courseList.forEach((course) => {
                 const existing = uniqueCourses.get(course.id);
 
@@ -63,23 +62,18 @@ export default function Courses() {
         });
 
         return Array.from(uniqueCourses.values());
-    }, [archivedResult.data, businessResult.data, myResult.data]);
+    }, [businessResult.data, inactiveResult.data, myResult.data]);
 
-    const businessCourses = useMemo(
-        () => mergedPortfolio.filter((course) => course.active),
-        [mergedPortfolio],
-    );
-
-    const archivedCourses = useMemo(
+    const inactiveCourses = useMemo(
         () => mergedPortfolio.filter((course) => !course.active),
         [mergedPortfolio],
     );
 
     const courses = useMemo(() => {
         if (source === "my") return myResult.data || [];
-        if (source === "business") return businessCourses;
-        return archivedCourses;
-    }, [archivedCourses, businessCourses, myResult.data, source]);
+        if (source === "business") return businessResult.data || [];
+        return inactiveCourses;
+    }, [businessResult.data, inactiveCourses, myResult.data, source]);
 
     const normalizedQuery = searchQuery.trim().toLowerCase();
     const filteredCourses = useMemo(() => (
@@ -98,15 +92,15 @@ export default function Courses() {
 
     const sourceCounts = {
         my: myResult.data?.length || 0,
-        business: businessCourses.length,
-        archived: archivedCourses.length,
+        business: businessResult.data?.length || 0,
+        inactive: inactiveCourses.length,
     };
 
     const stats = [
         {
             label: "Jami portfel",
             value: mergedPortfolio.length,
-            hint: `${sourceCounts.business} ta catalogda`,
+            hint: `${sourceCounts.business} ta biznes kurs`,
             icon: BookOpen,
             accent: "from-sky-500/20 to-blue-500/10 text-sky-700",
         },
@@ -118,16 +112,16 @@ export default function Courses() {
             accent: "from-emerald-500/20 to-teal-500/10 text-emerald-700",
         },
         {
-            label: "Arxiv ombori",
-            value: sourceCounts.archived,
-            hint: "Tiklashga tayyor",
-            icon: Archive,
+            label: "Non-active",
+            value: sourceCounts.inactive,
+            hint: "Publicda ko'rinmaydi",
+            icon: Power,
             accent: "from-violet-500/20 to-indigo-500/10 text-violet-700",
         },
     ];
 
     const sourceMeta = sourceOptions.find((item) => item.id === source);
-    const isLoading = myResult.isLoading || businessResult.isLoading || archivedResult.isLoading;
+    const isLoading = myResult.isLoading || businessResult.isLoading || inactiveResult.isLoading;
 
     return (
         <div className="mx-auto max-w-[1560px] space-y-4 pb-10">
@@ -152,7 +146,7 @@ export default function Courses() {
                         </h1>
 
                         <p className="mt-2 max-w-lg text-sm leading-6 text-slate-500 dark:text-slate-300">
-                            Yaratish, nashr qilish va arxiv oqimi shu oynada.
+                            Yaratish, nashr qilish va active holatini shu oynada boshqaring.
                         </p>
 
                         <div className="mt-4 flex flex-wrap gap-2">
@@ -281,7 +275,7 @@ export default function Courses() {
             ) : (
                 <section className="rounded-[28px] border border-white/60 bg-white/86 px-6 py-16 text-center shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-xl dark:border-slate-800 dark:bg-slate-950/75 dark:shadow-[0_16px_40px_rgba(2,6,23,0.35)]">
                     <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-[20px] bg-slate-100 text-slate-400 shadow-sm dark:bg-slate-900 dark:text-slate-500 dark:shadow-none">
-                        <Layers3 className="h-7 w-7" />
+                        <BookOpen className="h-7 w-7" />
                     </div>
                     <h3 className="mt-5 text-2xl font-bold tracking-[-0.04em] text-slate-950 dark:text-slate-100">Kurs topilmadi</h3>
                     <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-500 dark:text-slate-400">

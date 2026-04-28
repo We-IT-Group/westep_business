@@ -32,6 +32,8 @@ export interface Course extends Common {
     name: string,
     description: string,
     isPublished: boolean,
+    published?: boolean,
+    status?: string,
     active: boolean,
     publishedAt: string,
     businessId: string

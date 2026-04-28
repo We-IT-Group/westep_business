@@ -1,17 +1,18 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
-import {getMyCourses, getBusinessCourses, getArchivedBusinessCourses, addCourses, updateCourse, deleteCourse, getCourseById, patchCourseActive} from "./courseApi.ts";
+import {getMyCourses, getBusinessCourses, getInactiveBusinessCourses, addCourses, updateCourse, deleteCourse, getCourseById, patchCourseActive} from "./courseApi.ts";
 import {useNavigate} from "react-router-dom";
 import {getItem} from "../../utils/utils.ts";
 import {showErrorToast} from "../../utils/toast.tsx";
 import {Course} from "../../types/types.ts";
+import {ApiRequestError} from "../../utils/apiError.ts";
 
 type CourseQuerySnapshot = [readonly unknown[], Course[] | undefined];
 const coursesKey = ["courses"] as const;
 const myCoursesKey = [...coursesKey, "my"] as const;
 const businessCoursesKey = [...coursesKey, "business"] as const;
-const archivedCoursesKey = [...coursesKey, "archived"] as const;
+const inactiveCoursesKey = [...coursesKey, "inactive"] as const;
 const courseDetailKey = (id: string | undefined) => [...coursesKey, "detail", id] as const;
-const courseListKeys = [myCoursesKey, businessCoursesKey, archivedCoursesKey] as const;
+const courseListKeys = [myCoursesKey, businessCoursesKey, inactiveCoursesKey] as const;
 
 export const useGetMyCourses = () =>
     useQuery({
@@ -35,13 +36,13 @@ export const useGetBusinessCourses = () =>
         retry: false,
     });
 
-export const useGetArchivedBusinessCourses = () =>
+export const useGetInactiveBusinessCourses = () =>
     useQuery({
-        queryKey: archivedCoursesKey,
+        queryKey: inactiveCoursesKey,
         queryFn: async () => {
             const token = getItem<string>('accessToken');
             if (!token) throw new Error("No token");
-            return await getArchivedBusinessCourses();
+            return await getInactiveBusinessCourses();
         },
         retry: false,
     });
@@ -90,7 +91,7 @@ export const useUpdateCourse = () => {
 export const usePatchCourseActive = () => {
     const qc = useQueryClient();
     return useMutation({
-        mutationFn: ({id, value}: { id: string, value: boolean, source?: "my" | "business" | "archived" }) => patchCourseActive(id, value),
+        mutationFn: ({id, value}: { id: string, value: boolean, source?: "my" | "business" | "inactive" }) => patchCourseActive(id, value),
         onMutate: async ({id, value, source}) => {
             await qc.cancelQueries({queryKey: coursesKey});
             await qc.cancelQueries({queryKey: courseDetailKey(id)});
@@ -122,8 +123,8 @@ export const usePatchCourseActive = () => {
 
                 const querySource = queryKey[1];
 
-                if (querySource === "archived") {
-                    if (source === "archived" && value) {
+                if (querySource === "inactive") {
+                    if (source === "inactive" && value) {
                         nextCourses = nextCourses.filter((course) => course.id !== id);
                     } else if ((source === "business" || source === "my") && !value && !hasCourse && updatedCourse) {
                         nextCourses = [updatedCourse, ...nextCourses];
@@ -131,9 +132,7 @@ export const usePatchCourseActive = () => {
                 }
 
                 if (querySource === "business") {
-                    if (source === "business" && !value) {
-                        nextCourses = nextCourses.filter((course) => course.id !== id);
-                    } else if (source === "archived" && value && !hasCourse && updatedCourse) {
+                    if (source === "inactive" && value && !hasCourse && updatedCourse) {
                         nextCourses = [updatedCourse, ...nextCourses];
                     }
                 }
@@ -153,13 +152,21 @@ export const usePatchCourseActive = () => {
                 });
             }
         },
-        onError: (error, _variables, context) => {
+        onError: (error, variables, context) => {
             context?.previousQueries?.forEach(([queryKey, courses]) => {
                 qc.setQueryData(queryKey, courses);
             });
 
             if (context?.previousDetail) {
                 qc.setQueryData(courseDetailKey(context.previousDetail.id), context.previousDetail);
+            }
+
+            if (variables.value) {
+                showErrorToast(
+                    new ApiRequestError("Kurs active qilish uchun published bo'lishi va kamida bitta active darsi bo'lishi kerak."),
+                    "Kursni active qilib bo'lmadi",
+                );
+                return;
             }
 
             showErrorToast(error, "Kurs holatini o'zgartirib bo'lmadi");

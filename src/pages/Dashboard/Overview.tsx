@@ -1,7 +1,6 @@
 import {useMemo} from "react";
 import {Link} from "react-router-dom";
 import {
-    Archive,
     ArrowUpRight,
     Bell,
     BookOpen,
@@ -12,7 +11,7 @@ import {
     Users,
 } from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
-import {useGetArchivedBusinessCourses, useGetBusinessCourses, useGetMyCourses} from "../../api/courses/useCourse.ts";
+import {useGetBusinessCourses, useGetInactiveBusinessCourses, useGetMyCourses} from "../../api/courses/useCourse.ts";
 import {useUser} from "../../api/auth/useAuth.ts";
 import {useGetUsers} from "../../api/businessUser/useBusinessUser.ts";
 import {useUnreadNotificationsCount} from "../../api/notifications/useNotifications.ts";
@@ -38,25 +37,25 @@ export default function Overview() {
     const {data: user} = useUser();
     const {data: myCoursesData} = useGetMyCourses();
     const {data: businessCoursesData} = useGetBusinessCourses();
-    const {data: archivedCoursesData} = useGetArchivedBusinessCourses();
+    const {data: inactiveCoursesData} = useGetInactiveBusinessCourses();
     const {data: teamMembersData} = useGetUsers(user?.businessId);
     const {data: unreadNotifications} = useUnreadNotificationsCount();
 
     const myCourses = useMemo(() => myCoursesData ?? [], [myCoursesData]);
     const businessCourses = useMemo(() => businessCoursesData ?? [], [businessCoursesData]);
-    const archivedCourses = useMemo(() => archivedCoursesData ?? [], [archivedCoursesData]);
+    const inactiveCourses = useMemo(() => inactiveCoursesData ?? [], [inactiveCoursesData]);
     const teamMembers = useMemo(() => teamMembersData ?? [], [teamMembersData]);
     const unreadCount = unreadNotifications || 0;
 
     const allCourses = useMemo(() => {
         const uniqueCourses = new Map<string, Course>();
 
-        [...myCourses, ...businessCourses, ...archivedCourses].forEach((course) => {
+        [...myCourses, ...businessCourses, ...inactiveCourses].forEach((course) => {
             uniqueCourses.set(course.id, course);
         });
 
         return Array.from(uniqueCourses.values());
-    }, [archivedCourses, businessCourses, myCourses]);
+    }, [businessCourses, inactiveCourses, myCourses]);
 
     const sortedCourses = useMemo(
         () =>
@@ -71,12 +70,12 @@ export default function Overview() {
     const activeCourses = allCourses.filter((course) => course.active).length;
     const publishedCourses = allCourses.filter((course) => course.isPublished).length;
     const draftCourses = Math.max(totalCourses - publishedCourses, 0);
-    const archivedCount = allCourses.filter((course) => course.active === false).length;
+    const inactiveCount = allCourses.filter((course) => course.active === false).length;
     const teachersCount = teamMembers.filter((member) => member.role === "TEACHER").length;
     const assistantsCount = teamMembers.filter((member) => member.role === "ASSISTANT").length;
     const activeRate = percentage(activeCourses, totalCourses);
     const publishedRate = percentage(publishedCourses, totalCourses);
-    const archiveRate = percentage(archivedCount, totalCourses);
+    const inactiveRate = percentage(inactiveCount, totalCourses);
     const recentCourses = sortedCourses.slice(0, 5);
 
     const heroStats: StatCard[] = [
@@ -133,10 +132,10 @@ export default function Overview() {
             tone: "from-amber-500/20 to-orange-500/10 text-amber-700 dark:text-amber-200",
         },
         {
-            label: "Arxiv",
-            value: archivedCount,
-            hint: `${archiveRate}% portfel`,
-            icon: Archive,
+            label: "Non-active",
+            value: inactiveCount,
+            hint: `${inactiveRate}% portfel`,
+            icon: Clock3,
             tone: "from-fuchsia-500/20 to-violet-500/10 text-fuchsia-700 dark:text-fuchsia-200",
         },
     ];
@@ -167,10 +166,10 @@ export default function Overview() {
             hint: "Kontent tugallanmagan kurslar",
         },
         {
-            label: "Arxiv hajmi",
-            value: `${archivedCount}`,
-            progress: archiveRate,
-            hint: "Qayta faollashtirishga tayyor kurslar",
+            label: "Non-active kurslar",
+            value: `${inactiveCount}`,
+            progress: inactiveRate,
+            hint: "Publicda ko'rinmaydigan kurslar",
         },
     ];
 
@@ -336,7 +335,7 @@ export default function Overview() {
                             <div className="mt-5 space-y-3">
                                 {[
                                     `${draftCourses} ta qoralama builder'da yakunlanishi kerak`,
-                                    `${archivedCount} ta kurs arxivdan qayta faollashtirilishi mumkin`,
+                                    `${inactiveCount} ta kurs non-active holatda`,
                                     `${unreadCount} ta bildirishnoma javob kutmoqda`,
                                 ].map((item, index) => (
                                     <div
@@ -410,7 +409,7 @@ export default function Overview() {
                                                     ? "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200"
                                                     : "bg-slate-200 text-slate-700 dark:bg-slate-800 dark:text-slate-300"
                                             }`}>
-                                                {course.active ? "Faol" : "Arxiv"}
+                                                {course.active ? "Faol" : "Non-active"}
                                             </span>
                                         </div>
                                     </Link>

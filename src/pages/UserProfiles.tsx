@@ -70,8 +70,6 @@ export default function UserProfiles() {
         },
     ];
 
-    const permissions = user?.permissionsList?.length ? user.permissionsList : ["Workspace access"];
-
     return (
         <div className="flex flex-col gap-6 pb-8">
             <PageMeta
@@ -149,7 +147,7 @@ export default function UserProfiles() {
                 </div>
             </section>
 
-            <section className="grid gap-6 xl:grid-cols-[minmax(0,1.05fr)_420px]">
+            <section className="grid gap-6">
                 <div className="rounded-[32px] border border-white/80 bg-white/88 p-6 shadow-[0_28px_80px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/75 dark:shadow-[0_28px_80px_rgba(2,6,23,0.45)]">
                     <div className="flex items-center justify-between">
                         <div>
@@ -178,36 +176,12 @@ export default function UserProfiles() {
                             <p className="text-xs font-black uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Business ID</p>
                             <p className="mt-2 text-lg font-black text-slate-950 break-all dark:text-slate-100">{user?.businessId || "-"}</p>
                         </div>
-                    </div>
-                </div>
-
-                <div className="rounded-[32px] border border-white/80 bg-white/88 p-6 shadow-[0_28px_80px_rgba(15,23,42,0.07)] backdrop-blur dark:border-slate-800 dark:bg-slate-950/75 dark:shadow-[0_28px_80px_rgba(2,6,23,0.45)]">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <p className="text-[10px] font-black uppercase tracking-[0.28em] text-slate-400 dark:text-slate-500">Permissions</p>
-                            <h2 className="mt-2 text-2xl font-black tracking-tight text-slate-950 dark:text-slate-100">Access profile</h2>
+                        <div className="rounded-[24px] border border-slate-200 bg-slate-50/75 p-5 dark:border-slate-800 dark:bg-slate-900/60 md:col-span-2">
+                            <p className="text-sm font-black text-slate-950 dark:text-slate-100">Next profile layer</p>
+                            <p className="mt-2 text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">
+                                `PUT /api/user/update` va `teacher-profiles/me` hooklari qo‘shilgach, shu sahifada editable professional identity va notification preferences ham ishlaydi.
+                            </p>
                         </div>
-                        <div className="rounded-2xl bg-emerald-50 p-3 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">
-                            <ShieldCheck className="h-5 w-5"/>
-                        </div>
-                    </div>
-
-                    <div className="mt-6 flex flex-wrap gap-3">
-                        {permissions.map((permission: string) => (
-                            <div
-                                key={permission}
-                                className="rounded-full border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-black text-slate-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"
-                            >
-                                {permission}
-                            </div>
-                        ))}
-                    </div>
-
-                    <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50/75 p-5 dark:border-slate-800 dark:bg-slate-900/60">
-                        <p className="text-sm font-black text-slate-950 dark:text-slate-100">Next profile layer</p>
-                        <p className="mt-2 text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">
-                            `PUT /api/user/update` va `teacher-profiles/me` hooklari qo‘shilgach, shu sahifada editable professional identity va notification preferences ham ishlaydi.
-                        </p>
                     </div>
                 </div>
             </section>

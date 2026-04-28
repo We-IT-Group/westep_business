@@ -1,7 +1,7 @@
 import {CalendarClock, CheckCircle2, Layers3, LoaderCircle, Sparkles, Users} from "lucide-react";
 import PageMeta from "../../components/common/PageMeta";
 import {useUser} from "../../api/auth/useAuth.ts";
-import {useGetArchivedBusinessCourses, useGetBusinessCourses, useGetMyCourses} from "../../api/courses/useCourse.ts";
+import {useGetBusinessCourses, useGetInactiveBusinessCourses, useGetMyCourses} from "../../api/courses/useCourse.ts";
 import {useGetUsers} from "../../api/businessUser/useBusinessUser.ts";
 import {useUnreadNotificationsCount} from "../../api/notifications/useNotifications.ts";
 
@@ -15,7 +15,7 @@ export default function Schedule() {
     const {data: user, isLoading: isUserLoading} = useUser();
     const {data: myCourses = [], isLoading: isMyCoursesLoading} = useGetMyCourses();
     const {data: businessCourses = [], isLoading: isBusinessCoursesLoading} = useGetBusinessCourses();
-    const {data: archivedCourses = [], isLoading: isArchivedCoursesLoading} = useGetArchivedBusinessCourses();
+    const {data: inactiveCourses = [], isLoading: isInactiveCoursesLoading} = useGetInactiveBusinessCourses();
     const {data: members = [], isLoading: isMembersLoading} = useGetUsers(user?.businessId);
     const {data: unreadNotifications = 0, isLoading: isNotificationsLoading} = useUnreadNotificationsCount();
 
@@ -23,7 +23,7 @@ export default function Schedule() {
         isUserLoading ||
         isMyCoursesLoading ||
         isBusinessCoursesLoading ||
-        isArchivedCoursesLoading ||
+        isInactiveCoursesLoading ||
         isMembersLoading ||
         isNotificationsLoading;
 
@@ -44,7 +44,7 @@ export default function Schedule() {
     }
 
     const liveCourses = businessCourses.filter((course) => course.active);
-    const archivedCount = archivedCourses.length;
+    const inactiveCount = inactiveCourses.length;
     const draftCount = [...myCourses, ...businessCourses].filter((course) => !course.isPublished).length;
 
     const rhythmCards = [
@@ -89,8 +89,8 @@ export default function Schedule() {
         },
         {
             title: "Close",
-            value: `${archivedCount} archived`,
-            description: "Lifecycle’dan chiqqan yoki vaqtincha to‘xtatilgan kurslar.",
+            value: `${inactiveCount} non-active`,
+            description: "Public katalog va yangi xarid uchun yopiq kurslar.",
         },
     ];
 
@@ -115,7 +115,7 @@ export default function Schedule() {
                         </div>
 
                         <h1 className="mt-5 max-w-3xl text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100 md:text-[2.7rem]">
-                            Planning, delivery va archive oqimini bitta schedule surface ichida ko‘ring
+                            Planning, delivery va active holatlarini bitta schedule surface ichida ko‘ring
                         </h1>
                         <p className="mt-4 max-w-3xl text-sm font-medium leading-7 text-slate-500 dark:text-slate-300 md:text-base">
                             Bu sahifa hozircha real course lifecycle, team size va notification signal’lari asosida operational rhythm’ni ko‘rsatadi.

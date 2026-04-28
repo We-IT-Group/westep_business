@@ -71,7 +71,7 @@ const CourseExplorerSidebar: React.FC<CourseExplorerSidebarProps> = ({
                                 ? "border-emerald-200 bg-emerald-50 text-emerald-700"
                                 : "border-amber-200 bg-amber-50 text-amber-700"
                         }`}>
-                            {isCourseActive ? "Live" : "Archived"}
+                            {isCourseActive ? "Active" : "Non-active"}
                         </div>
                     </div>
 

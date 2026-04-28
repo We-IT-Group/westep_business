@@ -19,7 +19,7 @@ const settingCards = [
     },
     {
         title: "Asosiy oqimlar",
-        description: "Course archive/live, builder va review oqimlari workspace rules bilan uyg‘unlashadi.",
+        description: "Course active/non-active, builder va review oqimlari workspace rules bilan uyg‘unlashadi.",
         icon: Workflow,
         tone: "from-amber-500/15 to-orange-400/10 text-amber-700",
     },
@@ -173,7 +173,7 @@ export default function Settings() {
                             </div>
                             <p className="mt-4 text-base font-black text-slate-950 dark:text-slate-100">Kurs hayot sikli</p>
                             <p className="mt-2 text-sm font-medium leading-6 text-slate-500 dark:text-slate-400">
-                                `/api/course/get`, `/api/course/my-business`, archive/live toggle va builder flowlar ishlayapti.
+                                `/api/course/get`, `/api/course/my-business`, active/non-active toggle va builder flowlar ishlayapti.
                             </p>
                         </div>
 

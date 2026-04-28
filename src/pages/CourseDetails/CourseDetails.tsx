@@ -229,11 +229,11 @@ const CourseDetails = () => {
             {
                 id: course.id,
                 value: checked,
-                source: course.active ? "business" : "archived",
+                source: course.active ? "business" : "inactive",
             },
             {
                 onSuccess: () => {
-                    showSuccessToast(`Course ${checked ? "activated" : "archived"} successfully`);
+                    showSuccessToast(checked ? "Kurs active qilindi" : "Kurs non-active qilindi");
                 },
             },
         );
@@ -316,7 +316,7 @@ const CourseDetails = () => {
                                             ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/20 dark:bg-emerald-500/10 dark:text-emerald-200"
                                             : "border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200"
                                     }`}>
-                                        {course?.active ? "Live course" : "Archive mode"}
+                                        {course?.active ? "Active course" : "Non-active course"}
                                     </span>
                                 </div>
                                 <h1 className="mt-3 text-3xl font-black tracking-tight text-slate-950 dark:text-slate-100 md:text-[2.5rem]">
@@ -381,7 +381,7 @@ const CourseDetails = () => {
                                     <p className="text-[10px] font-black uppercase tracking-[0.24em] text-slate-400 dark:text-slate-500">Visibility</p>
                                     <div className="mt-3 flex items-center justify-between rounded-2xl bg-white px-4 py-3 shadow-sm dark:bg-slate-900 dark:shadow-none">
                                         <div>
-                                            <p className="text-sm font-black text-slate-900 dark:text-slate-100">{course?.active ? "Visible to learners" : "Archived from business"}</p>
+                                            <p className="text-sm font-black text-slate-900 dark:text-slate-100">{course?.active ? "Visible to learners" : "Non-active for new sales"}</p>
                                             <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">Toggle course availability instantly.</p>
                                         </div>
                                         <Switch

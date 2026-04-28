@@ -10,6 +10,7 @@ type CourseRecord = Partial<Course> & {
     name: string;
     isActive?: boolean;
     active?: boolean;
+    published?: boolean;
 };
 
 type CoursesResponse =
@@ -42,7 +43,7 @@ const normalizeCourse = (value: unknown): Course | null => {
     return {
         ...value,
         active: Boolean(value.active ?? value.isActive),
-        isPublished: Boolean(value.isPublished),
+        isPublished: Boolean(value.isPublished ?? value.published),
         description: value.description || "",
         publishedAt: value.publishedAt || "",
         businessId: value.businessId || "",
@@ -135,12 +136,12 @@ export const getBusinessCourses = async () => {
     }
 };
 
-export const getArchivedBusinessCourses = async () => {
+export const getInactiveBusinessCourses = async () => {
     try {
-        const {data} = await apiClient.get("/course/my-business/archived");
+        const {data} = await apiClient.get("/course/my-business/inactive");
         return normalizeCourseList(data);
     } catch (error) {
-        throw parseApiError(error, "Arxivlangan kurslar yuklanmadi.");
+        throw parseApiError(error, "Nofaol kurslar yuklanmadi.");
     }
 };
 
