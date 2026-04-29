@@ -11,6 +11,8 @@ import FormElements from "../pages/Forms/FormElements.tsx";
 import CreatePassword from "../pages/AuthPages/CreatePassword.tsx";
 import ResetPassword from "../pages/AuthPages/ResetPassword.tsx";
 import Courses from "../pages/Courses/Courses.tsx";
+import CreateCourse from "../pages/Courses/CreateCourse.tsx";
+import EditCourse from "../pages/Courses/EditCourse.tsx";
 import Users from "../pages/Users/Users.tsx";
 import AddUsers from "../pages/Users/AddUsers.tsx";
 import CourseDetails from "../pages/CourseDetails/CourseDetails.tsx";
@@ -29,7 +31,9 @@ export const authProtectedRoutes = [
     {index: true, element: <Overview/>, path: "/"},
     {path: "/dashboard", element: <Overview/>},
     {path: "/courses/update/:id", element: <AddCourse/>},
-    {path: "/courses/add", element: <AddCourse/>},
+    {path: "/courses/create", element: <CreateCourse/>},
+    {path: "/courses/add", element: <CreateCourse/>},
+    {path: "/courses/edit/:id", element: <EditCourse/>},
     {
         path: "/courses/details/:id", element: <CourseDetails/>,
         children: [

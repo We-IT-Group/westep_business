@@ -21,7 +21,6 @@ export const useAddFile = () => {
     return useMutation({
         mutationFn: addFile,
         onSuccess: async (id) => {
-            console.log(id)
             qc.setQueryData(["fileId"], id);
         },
         onError: (error) => {

@@ -5,6 +5,7 @@ import {useAddModule, useUpdateModule} from "../../api/module/useModule.ts";
 import Label from "../form/Label.tsx";
 import Input from "../form/input/InputField.tsx";
 import Button from "../ui/button/Button.tsx";
+import {Switch} from "../ui/switch.tsx";
 
 interface ModuleFormProps {
     courseId: string;
@@ -17,6 +18,7 @@ interface ModuleFormProps {
 type ModuleFormValues = {
     name: string;
     price: number;
+    active: boolean;
 };
 
 export default function ModuleForm({courseId, initialData, suggestedOrderIndex = 0, onSuccess, onCancel}: ModuleFormProps) {
@@ -29,6 +31,7 @@ export default function ModuleForm({courseId, initialData, suggestedOrderIndex =
         initialValues: {
             name: initialData?.name || "",
             price: initialData?.price || 0,
+            active: initialData?.active ?? false,
         },
         enableReinitialize: true,
         validationSchema: Yup.object({
@@ -38,21 +41,26 @@ export default function ModuleForm({courseId, initialData, suggestedOrderIndex =
         onSubmit: async (values) => {
             const payload = {
                 name: values.name.trim(),
-                description: initialData?.description || "",
+                description: initialData?.description?.trim() || "",
                 price: Number(values.price) || 0,
                 courseId,
                 orderIndex: initialData?.orderIndex ?? suggestedOrderIndex,
+                active: values.active,
             };
 
-            if (isEditing && initialData?.id) {
-                await updateModule({
-                    ...payload,
-                    id: initialData.id,
-                } as Module);
-            } else {
-                await addModule(payload as Omit<Module, "id">);
+            try {
+                if (isEditing && initialData?.id) {
+                    await updateModule({
+                        ...payload,
+                        id: initialData.id,
+                    } as Module);
+                } else {
+                    await addModule(payload as Omit<Module, "id" | "createdAt" | "lessonCount">);
+                }
+                onSuccess();
+            } catch (error) {
+                formik.setStatus(error instanceof Error ? error.message : "Modul saqlanmadi");
             }
-            onSuccess();
         },
     });
 
@@ -81,6 +89,21 @@ export default function ModuleForm({courseId, initialData, suggestedOrderIndex =
                     label="Narx (UZS)"
                     className="rounded-2xl border-gray-300 bg-white dark:bg-slate-950"
                 />
+
+                {isEditing ? (
+                    <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
+                        <div>
+                            <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Studentlarga ko‘rinishi</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400">Tayyor bo‘lmasa switch o‘chiq qolsin.</p>
+                        </div>
+                        <Switch
+                            checked={formik.values.active}
+                            onCheckedChange={(checked) => formik.setFieldValue("active", checked)}
+                        />
+                    </div>
+                ) : null}
+
+                {formik.status ? <p className="text-sm font-semibold text-red-500">{formik.status}</p> : null}
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-1">

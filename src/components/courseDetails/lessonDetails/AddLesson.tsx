@@ -3,6 +3,7 @@ import {useLocation, useNavigate, useParams} from "react-router-dom";
 import {useFormik} from "formik";
 import * as Yup from "yup";
 import {
+    ArrowLeft,
     BookOpen,
     CheckCircle2,
     FileQuestion,
@@ -13,7 +14,7 @@ import {
     Upload,
     Video,
 } from "lucide-react";
-import {Lesson} from "../../../types/types.ts";
+import {Lesson, LessonType} from "../../../types/types.ts";
 import {useAddLesson, useGetLessonById, useUpdateLesson} from "../../../api/lessons/useLesson.ts";
 import {useImportLessonQuiz} from "../../../api/lessonQuiz/useLessonQuiz.ts";
 import {useCreateLessonHomework, useCreateLessonResource} from "../../../api/lessonMaterials/useLessonMaterials.ts";
@@ -23,7 +24,7 @@ import {useMobile} from "../../../hooks/useMobile.ts";
 import {Input} from "../../ui/input.tsx";
 import {Button} from "../../ui/button.tsx";
 import {ScrollArea} from "../../ui/scroll-area.tsx";
-import {Separator} from "../../ui/separator.tsx";
+import {Select, SelectContent, SelectItem, SelectTrigger} from "../../ui/select.tsx";
 import VideoPlayer from "./VedioPlayerComponent.tsx";
 
 type LessonMaterialFormState = {
@@ -49,10 +50,18 @@ type AddLessonProps = {
     lessonId?: string;
     courseId?: string;
     moduleId?: string;
+    onBack?: () => void;
 };
+
+type LessonEditorValues = Omit<Lesson, "id" | "createdAt">;
+type ComposerSection = "video" | "homework" | "resource" | "quiz";
 
 const MAX_EXTERNAL_LINKS = 3;
 const MAX_FILES = 3;
+const LESSON_TYPE_LABELS: Record<LessonType, string> = {
+    LESSON: "Dars",
+    PRACTICE: "Mashq",
+};
 const MATERIAL_ACCEPT =
     ".xls,.xlsx,.pdf,.doc,.docx,.ppt,.pptx,application/vnd.ms-excel,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation";
 
@@ -172,8 +181,34 @@ const extractLessonResources = (lessonData: unknown): ResourceListItem[] => {
 };
 
 const normalizeLinks = (links: string[]) => links.map((link) => link.trim()).filter(Boolean);
+const previewLinks = (links: string[]) => normalizeLinks(links);
+const previewFiles = (files: File[]) => files.map((file) => file.name);
 
-export default function AddLesson({lessonId: propLessonId, courseId: propCourseId, moduleId: propModuleId}: AddLessonProps = {}) {
+const buildLessonPayload = (
+    values: LessonEditorValues,
+    moduleId: string,
+    fallbackOrderIndex: number,
+): LessonEditorValues => {
+    const type: LessonType = values.type ?? "LESSON";
+    const basePayload: LessonEditorValues = {
+        name: values.name.trim(),
+        description: values.description?.trim() ?? "",
+        moduleId,
+        type,
+        orderIndex: Number(values.orderIndex ?? fallbackOrderIndex) || fallbackOrderIndex,
+        estimatedDuration: type === "LESSON" ? Number(values.estimatedDuration ?? 0) || 0 : null,
+        active: Boolean(values.active),
+    };
+
+    if (type === "LESSON") {
+        basePayload.videoUrl = values.videoUrl?.trim() ?? "";
+        basePayload.watchCompletionPercent = Number(values.watchCompletionPercent ?? 80) || 0;
+    }
+
+    return basePayload;
+};
+
+export default function AddLesson({lessonId: propLessonId, courseId: propCourseId, moduleId: propModuleId, onBack}: AddLessonProps = {}) {
     const params = useParams<{ lessonId: string; id: string }>();
     const lessonId = propLessonId ?? params.lessonId;
     const courseId = propCourseId ?? params.id;
@@ -191,7 +226,11 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
     const {mutateAsync: importQuiz, isPending: isImportingQuiz} = useImportLessonQuiz(lessonId);
     const {mutateAsync: createHomework, isPending: isCreatingHomework} = useCreateLessonHomework(lessonId);
     const {mutateAsync: createResource, isPending: isCreatingResource} = useCreateLessonResource(lessonId);
-    const lessonTasksQuery = useLessonTasksReview(lessonId);
+    const [activeComposer, setActiveComposer] = useState<ComposerSection>("video");
+    const lessonTasksQuery = useLessonTasksReview(
+        lessonId,
+        activeComposer === "homework" || activeComposer === "resource" || activeComposer === "quiz",
+    );
 
     const lessonData = lessonQuery.data;
 
@@ -206,45 +245,60 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
 
     const lessonResources = useMemo(() => extractLessonResources(lessonData), [lessonData]);
     const lessonTasks = useMemo(() => lessonTasksQuery.data || [], [lessonTasksQuery.data]);
+    const homeworkTasks = useMemo(() => lessonTasks.filter((task) => task.type === "HOMEWORK"), [lessonTasks]);
+    const quizTasks = useMemo(() => lessonTasks.filter((task) => task.type === "QUIZ"), [lessonTasks]);
+    const visibleTasks = activeComposer === "homework" ? homeworkTasks : activeComposer === "quiz" ? quizTasks : [];
+    const visibleResources = activeComposer === "resource"
+        ? lessonResources.filter((resource) => !lessonTasks.some((task) => task.title === resource.title))
+        : [];
     const resolvedModuleId = useMemo(
         () => resolveLessonModuleId(lessonData, moduleId),
         [lessonData, moduleId],
     );
     const blockTypeMeta: Record<string, {label: string; badge: string}> = {
-        HOMEWORK: {label: "Homework", badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200"},
-        RESOURCE: {label: "Resource", badge: "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200"},
-        QUIZ: {label: "Quiz", badge: "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-200"},
+        HOMEWORK: {label: "Vazifa", badge: "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200"},
+        RESOURCE: {label: "Resurs", badge: "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200"},
+        QUIZ: {label: "Test", badge: "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-200"},
     };
+    const showComposerPanels = activeComposer === "homework" || activeComposer === "resource" || activeComposer === "quiz";
 
-    const initialValues = useMemo<Omit<Lesson, "id" | "createdAt">>(() => {
+    const initialValues = useMemo<LessonEditorValues>(() => {
         if (lessonData && lessonId) {
+            const lessonType: LessonType = lessonData.type ?? "LESSON";
             return {
-                name: lessonData.name,
+                name: lessonData.name || "Lesson nomi",
                 description: lessonData.description ?? "",
                 moduleId: resolveLessonModuleId(lessonData, moduleId),
-                orderIndex: lessonData.orderIndex,
-                estimatedDuration: lessonData.estimatedDuration,
-                videoUrl: lessonData.vedioUrl ?? "",
+                type: lessonType,
+                orderIndex: lessonData.orderIndex ?? 0,
+                estimatedDuration: lessonData.estimatedDuration ?? 0,
+                watchCompletionPercent: lessonData.watchCompletionPercent ?? 80,
+                videoUrl: lessonData.videoUrl ?? lessonData.vedioUrl ?? "",
+                active: lessonData.active ?? false,
             };
         }
 
         return {
-            name: "",
+            name: "Lesson nomi",
             description: "",
             moduleId,
+            type: "LESSON",
             orderIndex: 0,
             estimatedDuration: 0,
+            watchCompletionPercent: 80,
             videoUrl: "",
+            active: false,
         };
     }, [lessonData, lessonId, moduleId]);
 
-    const formik = useFormik({
+    const formik = useFormik<LessonEditorValues>({
         initialValues,
         enableReinitialize: true,
         validationSchema: Yup.object().shape({
             name: Yup.string().required("Lesson nomini kiriting"),
             moduleId: Yup.string().required("Module aniqlanmadi"),
-            videoUrl: Yup.string().required("Video linkini kiriting"),
+            type: Yup.mixed<LessonType>().oneOf(["LESSON", "PRACTICE"]).required("Type tanlang"),
+            watchCompletionPercent: Yup.number().min(0, "0 dan kichik bo'lmasin").max(100, "100 dan oshmasin"),
         }),
         onSubmit: async () => {
             if (!resolvedModuleId) {
@@ -252,26 +306,30 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
                 return;
             }
 
+            const body = buildLessonPayload(formik.values, resolvedModuleId, lessonLength + 1);
+
             if (lessonId) {
                 await updateLesson({
                     body: {
-                        ...formik.values,
-                        moduleId: resolvedModuleId,
+                        ...body,
                         id: lessonId,
+                        removeVideo: false,
                     },
                 });
             } else {
                 await addLesson({
-                    body: {
-                        ...formik.values,
-                        moduleId: resolvedModuleId,
-                        estimatedDuration: 0,
-                        orderIndex: lessonLength + 1,
-                    },
+                    body,
                 });
             }
         },
     });
+    const isLessonType = formik.values.type !== "PRACTICE";
+
+    useEffect(() => {
+        if (!isLessonType && (activeComposer === "resource" || activeComposer === "video")) {
+            setActiveComposer("homework");
+        }
+    }, [activeComposer, isLessonType]);
 
     useEffect(() => {
         if (!propLessonId && (isUpdateSuccess || isAddingSuccess)) {
@@ -294,19 +352,23 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
         formik.setTouched({
             ...formik.touched,
             name: true,
-            videoUrl: true,
+            moduleId: true,
+            type: true,
+            watchCompletionPercent: true,
         });
 
-        if (errors.name || errors.videoUrl) return;
+        if (errors.name || errors.moduleId || errors.type || errors.watchCompletionPercent) return;
+        const body = buildLessonPayload(formik.values, resolvedModuleId, lessonLength + 1);
+
         await updateLesson({
             body: {
-                ...formik.values,
-                moduleId: resolvedModuleId,
-                estimatedDuration: formik.values.estimatedDuration ?? 0,
+                ...body,
                 id: lessonId,
+                removeVideo: false,
             },
         });
         toast.success("Lesson saqlandi.");
+        onBack?.();
     };
 
     const handleMaterialLinkChange = (
@@ -530,13 +592,72 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
                         <div className="rounded-[28px] border border-slate-200 bg-slate-50/70 p-6 dark:border-slate-800 dark:bg-slate-900/50">
                             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="rounded-2xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
-                                        <Video className="h-5 w-5" />
-                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => onBack?.()}
+                                        className="flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900"
+                                    >
+                                        <ArrowLeft className="h-5 w-5" />
+                                    </button>
                                     <div>
                                         <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Lesson info</h3>
                                         <p className="text-sm text-slate-500 dark:text-slate-400">Video va matn shu yerda boshqariladi.</p>
                                     </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-3">
+                                    {isLessonType ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveComposer("video")}
+                                            className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition ${
+                                                activeComposer === "video"
+                                                    ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200"
+                                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+                                            }`}
+                                        >
+                                            <Video className="h-4 w-4" />
+                                            Video
+                                        </button>
+                                    ) : null}
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveComposer("homework")}
+                                        className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition ${
+                                            activeComposer === "homework"
+                                                ? "border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-200"
+                                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+                                        }`}
+                                    >
+                                        <CheckCircle2 className="h-4 w-4" />
+                                        Vazifa
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setActiveComposer("quiz")}
+                                        className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition ${
+                                            activeComposer === "quiz"
+                                                ? "border-violet-200 bg-violet-50 text-violet-700 dark:border-violet-500/30 dark:bg-violet-500/10 dark:text-violet-200"
+                                                : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+                                        }`}
+                                    >
+                                        <FileQuestion className="h-4 w-4" />
+                                        Test
+                                    </button>
+                                    {isLessonType ? (
+                                        <button
+                                            type="button"
+                                            onClick={() => setActiveComposer("resource")}
+                                            className={`inline-flex items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm font-semibold transition ${
+                                                activeComposer === "resource"
+                                                    ? "border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-500/30 dark:bg-blue-500/10 dark:text-blue-200"
+                                                    : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300"
+                                            }`}
+                                        >
+                                            <Paperclip className="h-4 w-4" />
+                                            Resurs
+                                        </button>
+                                    ) : null}
                                 </div>
 
                                 <Button
@@ -550,51 +671,119 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
                                 </Button>
                             </div>
 
-                            <div className="mt-6">
-                                <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                                    Lesson nomi
-                                </label>
-                                <Input
-                                    id="name"
-                                    name="name"
-                                    value={formik.values.name}
-                                    onChange={formik.handleChange}
-                                    onBlur={formik.handleBlur}
-                                    type="text"
-                                    placeholder="Lesson nomi"
-                                    className="h-12 rounded-2xl border-slate-200 dark:border-slate-700 dark:bg-slate-950"
-                                />
-                                {formik.touched.name && formik.errors.name ? (
-                                    <p className="mt-2 text-xs font-medium text-rose-500">{formik.errors.name}</p>
-                                ) : null}
-                            </div>
-
-                            <div className="mt-6 flex items-center gap-3">
-                                <div className="rounded-2xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
-                                    <Video className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Video</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Lesson videosi shu yerda boshqariladi.</p>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 space-y-5">
-                                <div className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
-                                    <div className="aspect-video bg-slate-50 dark:bg-slate-900">
-                                        <VideoPlayer videoUrl={formik.values.videoUrl ?? ""} />
-                                    </div>
-                                </div>
-
-                                <div className="grid gap-4">
-                                    <div>
+                            {isLessonType && activeComposer === "video" ? (
+                                <>
+                                    <div className="mt-6">
                                         <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
-                                            Video URL
+                                            Lesson nomi
+                                        </label>
+                                        <Input
+                                            id="name"
+                                            name="name"
+                                            value={formik.values.name}
+                                            onChange={formik.handleChange}
+                                            onBlur={formik.handleBlur}
+                                            type="text"
+                                            placeholder="Lesson nomi"
+                                            className="h-12 rounded-2xl border-slate-200 dark:border-slate-700 dark:bg-slate-950"
+                                        />
+                                        {formik.touched.name && formik.errors.name ? (
+                                            <p className="mt-2 text-xs font-medium text-rose-500">{formik.errors.name}</p>
+                                        ) : null}
+                                    </div>
+
+                                    <div className="mt-4 grid gap-4 lg:grid-cols-2">
+                                        <div>
+                                            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                                Type
+                                            </label>
+                                            <Select
+                                                value={formik.values.type ?? "LESSON"}
+                                                onValueChange={(value) => formik.setFieldValue("type", value)}
+                                            >
+                                                <SelectTrigger className="!h-12 rounded-2xl border-slate-200 bg-white px-4 text-sm font-medium text-slate-800 shadow-none dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100">
+                                                    <span className="flex min-w-0 items-center gap-3">
+                                                        <span
+                                                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${
+                                                                (formik.values.type ?? "LESSON") === "LESSON"
+                                                                    ? "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200"
+                                                                    : "bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200"
+                                                            }`}
+                                                        >
+                                                            {(formik.values.type ?? "LESSON") === "LESSON" ? (
+                                                                <Video className="h-4 w-4" />
+                                                            ) : (
+                                                                <FileQuestion className="h-4 w-4" />
+                                                            )}
+                                                        </span>
+                                                        <span className="truncate">{LESSON_TYPE_LABELS[(formik.values.type ?? "LESSON") as LessonType]}</span>
+                                                    </span>
+                                                </SelectTrigger>
+                                                <SelectContent className="rounded-2xl border-slate-200 bg-white p-2 shadow-xl dark:border-slate-700 dark:bg-slate-950">
+                                                    <SelectItem value="LESSON" className="rounded-xl px-3 py-3">
+                                                        <span className="flex items-center gap-3">
+                                                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
+                                                                <Video className="h-4 w-4" />
+                                                            </span>
+                                                            <span className="font-semibold text-slate-900 dark:text-slate-100">Dars</span>
+                                                        </span>
+                                                    </SelectItem>
+                                                    <SelectItem value="PRACTICE" className="rounded-xl px-3 py-3">
+                                                        <span className="flex items-center gap-3">
+                                                            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-700 dark:bg-amber-500/10 dark:text-amber-200">
+                                                                <FileQuestion className="h-4 w-4" />
+                                                            </span>
+                                                            <span className="font-semibold text-slate-900 dark:text-slate-100">Mashq</span>
+                                                        </span>
+                                                    </SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                                Ko‘rish foizi
+                                            </label>
+                                            <Input
+                                                id="watchCompletionPercent"
+                                                name="watchCompletionPercent"
+                                                value={formik.values.watchCompletionPercent ?? 80}
+                                                onChange={formik.handleChange}
+                                                onBlur={formik.handleBlur}
+                                                type="number"
+                                                min="0"
+                                                max="100"
+                                                className="h-12 rounded-2xl border-slate-200 dark:border-slate-700 dark:bg-slate-950"
+                                            />
+                                            {formik.touched.watchCompletionPercent && formik.errors.watchCompletionPercent ? (
+                                                <p className="mt-2 text-xs font-medium text-rose-500">{formik.errors.watchCompletionPercent}</p>
+                                            ) : null}
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                            Tavsif
+                                        </label>
+                                        <textarea
+                                            id="description"
+                                            name="description"
+                                            value={formik.values.description ?? ""}
+                                            onChange={formik.handleChange}
+                                            onBlur={formik.handleBlur}
+                                            placeholder="Qisqacha ta'rif"
+                                            className="min-h-[88px] w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-800 outline-none focus:border-blue-500 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                                        />
+                                    </div>
+
+                                    <div className="mt-4">
+                                        <label className="mb-2 block text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-400 dark:text-slate-500">
+                                            Video link
                                         </label>
                                         <Input
                                             id="videoUrl"
                                             name="videoUrl"
-                                            value={formik.values.videoUrl}
+                                            value={formik.values.videoUrl ?? ""}
                                             onChange={formik.handleChange}
                                             onBlur={formik.handleBlur}
                                             type="text"
@@ -602,281 +791,354 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
                                             className="h-12 rounded-2xl border-slate-200 dark:border-slate-700 dark:bg-slate-950"
                                         />
                                     </div>
-                                </div>
 
-                            </div>
+                                    <div className="mt-6 flex items-center gap-3">
+                                        <div className="rounded-2xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
+                                            <Video className="h-5 w-5" />
+                                        </div>
+                                        <div>
+                                            <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Video</h3>
+                                            <p className="text-sm text-slate-500 dark:text-slate-400">Video va ko‘rish foizi faqat dars uchun ishlatiladi.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mt-6 space-y-5">
+                                        <div className="mx-auto max-w-3xl overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
+                                            <div className="aspect-video bg-slate-50 dark:bg-slate-900">
+                                                <VideoPlayer videoUrl={formik.values.videoUrl ?? ""} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            ) : null}
                         </div>
 
                     </section>
 
-                    <Separator className="bg-slate-200 dark:bg-slate-800" />
-
-                    <section className="grid gap-5 xl:grid-cols-2">
+                    {showComposerPanels ? (
+                    <>
+                    <section className="grid gap-5">
                         <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
-                            <div className="flex items-center gap-3">
-                                <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">
-                                    <CheckCircle2 className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Homework qo‘shish</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Link va file ikkalasi ham optional.</p>
-                                </div>
-                            </div>
+                            <div className="mt-6 rounded-[24px] border border-slate-200 bg-slate-50/70 p-5 dark:border-slate-800 dark:bg-slate-900/40">
+                                {activeComposer === "homework" ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="rounded-2xl bg-emerald-100 p-3 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200">
+                                                <CheckCircle2 className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Vazifa qo‘shish</h3>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">Link va fayl ixtiyoriy.</p>
+                                            </div>
+                                        </div>
 
-                            <div className="mt-6 space-y-4">
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Homework title</label>
-                                    <Input
-                                        value={homeworkForm.title}
-                                        onChange={(event) => setHomeworkForm({...homeworkForm, title: event.target.value})}
-                                        placeholder="Masalan: Amaliy vazifa 1"
-                                        className="h-11 rounded-2xl"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Max score</label>
-                                    <Input
-                                        type="number"
-                                        value={homeworkForm.maxScore}
-                                        onChange={(event) => setHomeworkForm({...homeworkForm, maxScore: event.target.value})}
-                                        placeholder="Masalan: 100"
-                                        className="h-11 rounded-2xl"
-                                    />
-                                </div>
-
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">External link</label>
-                                        <button
-                                            type="button"
-                                            onClick={() => handleAddLinkField("homework")}
-                                            disabled={homeworkForm.links.length >= MAX_EXTERNAL_LINKS}
-                                            className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:text-slate-400 dark:text-blue-300 dark:disabled:text-slate-500"
-                                        >
-                                            Link qo‘shish ({homeworkForm.links.length}/{MAX_EXTERNAL_LINKS})
-                                        </button>
-                                    </div>
-                                    {homeworkForm.links.map((link, index) => (
-                                        <div key={`homework-link-${index}`} className="flex items-center gap-2">
+                                        <div>
+                                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Vazifa nomi</label>
                                             <Input
-                                                value={link}
-                                                onChange={(event) => handleMaterialLinkChange("homework", index, event.target.value)}
-                                                placeholder="https://..."
+                                                value={homeworkForm.title}
+                                                onChange={(event) => setHomeworkForm({...homeworkForm, title: event.target.value})}
+                                                placeholder="Masalan: Amaliy vazifa 1"
                                                 className="h-11 rounded-2xl"
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveLinkField("homework", index)}
-                                                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900"
-                                            >
-                                                Olib tashlash
-                                            </button>
                                         </div>
-                                    ))}
-                                </div>
 
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">File upload</label>
-                                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:text-blue-200">
-                                        <Upload className="h-4 w-4" />
-                                        Fayl tanlash
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept={MATERIAL_ACCEPT}
-                                            className="hidden"
-                                            onChange={(event) => handleFilesChange("homework", event)}
-                                        />
-                                    </label>
-                                    {homeworkForm.files.length > 0 ? (
-                                        <div className="mt-2 space-y-1">
-                                            {homeworkForm.files.map((file) => (
-                                                <div key={file.name} className="text-xs text-slate-500 dark:text-slate-400">
-                                                    {file.name}
+                                        <div>
+                                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Maksimal ball</label>
+                                            <Input
+                                                type="number"
+                                                value={homeworkForm.maxScore}
+                                                onChange={(event) => setHomeworkForm({...homeworkForm, maxScore: event.target.value})}
+                                                placeholder="Masalan: 100"
+                                                className="h-11 rounded-2xl"
+                                            />
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Tashqi link</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAddLinkField("homework")}
+                                                    disabled={homeworkForm.links.length >= MAX_EXTERNAL_LINKS}
+                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:text-slate-400 dark:text-blue-300 dark:disabled:text-slate-500"
+                                                >
+                                                    Link qo‘shish ({homeworkForm.links.length}/{MAX_EXTERNAL_LINKS})
+                                                </button>
+                                            </div>
+                                            {homeworkForm.links.map((link, index) => (
+                                                <div key={`homework-link-${index}`} className="flex items-center gap-2">
+                                                    <Input
+                                                        value={link}
+                                                        onChange={(event) => handleMaterialLinkChange("homework", index, event.target.value)}
+                                                        placeholder="https://..."
+                                                        className="h-11 rounded-2xl"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveLinkField("homework", index)}
+                                                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900"
+                                                    >
+                                                        Olib tashlash
+                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
-                                    ) : null}
-                                </div>
 
-                                <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-xs leading-5 text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
-                                    Teacher xohlasa faqat title bilan ham saqlaydi. Link va file uchun oldindan majburiy validation qo‘yilmagan.
-                                </p>
+                                        <div>
+                                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Fayl yuklash</label>
+                                            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:text-blue-200">
+                                                <Upload className="h-4 w-4" />
+                                                Fayl tanlash
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept={MATERIAL_ACCEPT}
+                                                    className="hidden"
+                                                    onChange={(event) => handleFilesChange("homework", event)}
+                                                />
+                                            </label>
+                                            {homeworkForm.files.length > 0 ? (
+                                                <div className="mt-2 space-y-1">
+                                                    {homeworkForm.files.map((file) => (
+                                                        <div key={file.name} className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {file.name}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : null}
+                                        </div>
 
-                                {homeworkError ? <p className="text-xs font-medium text-rose-500">{homeworkError}</p> : null}
+                                        {previewLinks(homeworkForm.links).length > 0 || previewFiles(homeworkForm.files).length > 0 ? (
+                                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Hozir qo‘shiladiganlar</p>
+                                                <div className="mt-3 space-y-2 text-sm">
+                                                    {previewLinks(homeworkForm.links).map((link) => (
+                                                        <div key={link} className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                                            <Link2 className="h-4 w-4 text-blue-500" />
+                                                            <span className="truncate">{link}</span>
+                                                        </div>
+                                                    ))}
+                                                    {previewFiles(homeworkForm.files).map((fileName) => (
+                                                        <div key={fileName} className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                                            <Paperclip className="h-4 w-4 text-emerald-500" />
+                                                            <span className="truncate">{fileName}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : null}
 
-                                <Button
-                                    type="button"
-                                    onClick={handleHomeworkSubmit}
-                                    disabled={isCreatingHomework}
-                                    className="h-11 w-full rounded-2xl bg-emerald-600 text-sm font-medium text-white hover:bg-emerald-700"
-                                >
-                                    {isCreatingHomework ? "Saqlanmoqda..." : "Homework saqlash"}
-                                </Button>
-                            </div>
-                        </div>
+                                        {homeworkError ? <p className="text-xs font-medium text-rose-500">{homeworkError}</p> : null}
 
-                        <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
-                            <div className="flex items-center gap-3">
-                                <div className="rounded-2xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
-                                    <Paperclip className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Resource qo‘shish</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Faqat title/description bilan ham saqlanadi.</p>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 space-y-4">
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Resource title</label>
-                                    <Input
-                                        value={resourceForm.title}
-                                        onChange={(event) => setResourceForm({...resourceForm, title: event.target.value})}
-                                        placeholder="Masalan: Qo‘shimcha materiallar"
-                                        className="h-11 rounded-2xl"
-                                    />
-                                </div>
-
-                                <div className="space-y-3">
-                                    <div className="flex items-center justify-between">
-                                        <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">External link</label>
-                                        <button
+                                        <Button
                                             type="button"
-                                            onClick={() => handleAddLinkField("resource")}
-                                            disabled={resourceForm.links.length >= MAX_EXTERNAL_LINKS}
-                                            className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:text-slate-400 dark:text-blue-300 dark:disabled:text-slate-500"
+                                            onClick={handleHomeworkSubmit}
+                                            disabled={isCreatingHomework}
+                                            className="h-11 w-full rounded-2xl bg-emerald-600 text-sm font-medium text-white hover:bg-emerald-700"
                                         >
-                                            Link qo‘shish ({resourceForm.links.length}/{MAX_EXTERNAL_LINKS})
-                                        </button>
+                                            {isCreatingHomework ? "Saqlanmoqda..." : "Vazifani saqlash"}
+                                        </Button>
                                     </div>
-                                    {resourceForm.links.map((link, index) => (
-                                        <div key={`resource-link-${index}`} className="flex items-center gap-2">
+                                ) : null}
+
+                                {activeComposer === "resource" && isLessonType ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="rounded-2xl bg-blue-100 p-3 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
+                                                <Paperclip className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Resurs qo‘shish</h3>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">Link va fayl ixtiyoriy.</p>
+                                            </div>
+                                        </div>
+
+                                        <div>
+                                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Resurs nomi</label>
                                             <Input
-                                                value={link}
-                                                onChange={(event) => handleMaterialLinkChange("resource", index, event.target.value)}
-                                                placeholder="https://..."
+                                                value={resourceForm.title}
+                                                onChange={(event) => setResourceForm({...resourceForm, title: event.target.value})}
+                                                placeholder="Masalan: Qo‘shimcha materiallar"
                                                 className="h-11 rounded-2xl"
                                             />
-                                            <button
-                                                type="button"
-                                                onClick={() => handleRemoveLinkField("resource", index)}
-                                                className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900"
-                                            >
-                                                Olib tashlash
-                                            </button>
                                         </div>
-                                    ))}
-                                </div>
 
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">File upload</label>
-                                    <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:text-blue-200">
-                                        <Upload className="h-4 w-4" />
-                                        Fayl tanlash
-                                        <input
-                                            type="file"
-                                            multiple
-                                            accept={MATERIAL_ACCEPT}
-                                            className="hidden"
-                                            onChange={(event) => handleFilesChange("resource", event)}
-                                        />
-                                    </label>
-                                    {resourceForm.files.length > 0 ? (
-                                        <div className="mt-2 space-y-1">
-                                            {resourceForm.files.map((file) => (
-                                                <div key={file.name} className="text-xs text-slate-500 dark:text-slate-400">
-                                                    {file.name}
+                                        <div className="space-y-3">
+                                            <div className="flex items-center justify-between">
+                                                <label className="block text-sm font-medium text-slate-700 dark:text-slate-300">Tashqi link</label>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleAddLinkField("resource")}
+                                                    disabled={resourceForm.links.length >= MAX_EXTERNAL_LINKS}
+                                                    className="text-xs font-medium text-blue-600 hover:text-blue-700 disabled:cursor-not-allowed disabled:text-slate-400 dark:text-blue-300 dark:disabled:text-slate-500"
+                                                >
+                                                    Link qo‘shish ({resourceForm.links.length}/{MAX_EXTERNAL_LINKS})
+                                                </button>
+                                            </div>
+                                            {resourceForm.links.map((link, index) => (
+                                                <div key={`resource-link-${index}`} className="flex items-center gap-2">
+                                                    <Input
+                                                        value={link}
+                                                        onChange={(event) => handleMaterialLinkChange("resource", index, event.target.value)}
+                                                        placeholder="https://..."
+                                                        className="h-11 rounded-2xl"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleRemoveLinkField("resource", index)}
+                                                        className="rounded-xl border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-900"
+                                                    >
+                                                        Olib tashlash
+                                                    </button>
                                                 </div>
                                             ))}
                                         </div>
-                                    ) : null}
-                                </div>
 
-                                <p className="rounded-2xl border border-dashed border-slate-200 bg-slate-50/80 px-4 py-3 text-xs leading-5 text-slate-500 dark:border-slate-700 dark:bg-slate-900/60 dark:text-slate-400">
-                                    Google Drive, Google Docs, PDF, DOCX, XLSX yoki PPTX kabi resurslar ulansa ham, ulanmasa ham create bo‘ladi.
-                                </p>
+                                        <div>
+                                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Fayl yuklash</label>
+                                            <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium text-slate-600 hover:border-blue-300 hover:text-blue-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-blue-500/30 dark:hover:text-blue-200">
+                                                <Upload className="h-4 w-4" />
+                                                Fayl tanlash
+                                                <input
+                                                    type="file"
+                                                    multiple
+                                                    accept={MATERIAL_ACCEPT}
+                                                    className="hidden"
+                                                    onChange={(event) => handleFilesChange("resource", event)}
+                                                />
+                                            </label>
+                                            {resourceForm.files.length > 0 ? (
+                                                <div className="mt-2 space-y-1">
+                                                    {resourceForm.files.map((file) => (
+                                                        <div key={file.name} className="text-xs text-slate-500 dark:text-slate-400">
+                                                            {file.name}
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            ) : null}
+                                        </div>
 
-                                {resourceError ? <p className="text-xs font-medium text-rose-500">{resourceError}</p> : null}
+                                        {previewLinks(resourceForm.links).length > 0 || previewFiles(resourceForm.files).length > 0 ? (
+                                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Hozir qo‘shiladiganlar</p>
+                                                <div className="mt-3 space-y-2 text-sm">
+                                                    {previewLinks(resourceForm.links).map((link) => (
+                                                        <div key={link} className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                                            <Link2 className="h-4 w-4 text-blue-500" />
+                                                            <span className="truncate">{link}</span>
+                                                        </div>
+                                                    ))}
+                                                    {previewFiles(resourceForm.files).map((fileName) => (
+                                                        <div key={fileName} className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+                                                            <Paperclip className="h-4 w-4 text-emerald-500" />
+                                                            <span className="truncate">{fileName}</span>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        ) : null}
 
-                                <Button
-                                    type="button"
-                                    onClick={handleResourceSubmit}
-                                    disabled={isCreatingResource}
-                                    className="h-11 w-full rounded-2xl bg-blue-600 text-sm font-medium text-white hover:bg-blue-700"
-                                >
-                                    {isCreatingResource ? "Saqlanmoqda..." : "Resource saqlash"}
-                                </Button>
+                                        {resourceError ? <p className="text-xs font-medium text-rose-500">{resourceError}</p> : null}
+
+                                        <Button
+                                            type="button"
+                                            onClick={handleResourceSubmit}
+                                            disabled={isCreatingResource}
+                                            className="h-11 w-full rounded-2xl bg-blue-600 text-sm font-medium text-white hover:bg-blue-700"
+                                        >
+                                            {isCreatingResource ? "Saqlanmoqda..." : "Resursni saqlash"}
+                                        </Button>
+                                    </div>
+                                ) : null}
+
+                                {activeComposer === "quiz" ? (
+                                    <div className="space-y-4">
+                                        <div className="flex items-center gap-3">
+                                            <div className="rounded-2xl bg-violet-100 p-3 text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
+                                                <FileQuestion className="h-5 w-5" />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Test yuklash</h3>
+                                                <p className="text-sm text-slate-500 dark:text-slate-400">`.docx` fayl orqali import qiling.</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
+                                            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Tanlangan fayl</p>
+                                            <p className="mt-1 text-sm font-medium text-slate-950 dark:text-slate-100">
+                                                {quizFile?.name || lastImportedFileName || "Hali fayl tanlanmagan"}
+                                            </p>
+                                        </div>
+
+                                        <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium text-slate-600 hover:border-violet-300 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200">
+                                            <Upload className="h-4 w-4" />
+                                            `.docx` tanlash
+                                            <input
+                                                type="file"
+                                                accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                                                onChange={handleQuizFileChange}
+                                                className="hidden"
+                                            />
+                                        </label>
+
+                                        <div>
+                                            <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Vaqt limiti (ixtiyoriy)</label>
+                                            <Input
+                                                type="number"
+                                                value={quizTimeLimit}
+                                                onChange={(event) => setQuizTimeLimit(event.target.value)}
+                                                placeholder="Masalan: 20"
+                                                className="h-11 rounded-2xl"
+                                            />
+                                        </div>
+
+                                        {quizFile || lastImportedFileName ? (
+                                            <div className="rounded-2xl border border-dashed border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
+                                                <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Hozir qo‘shiladigan fayl</p>
+                                                <div className="mt-3 flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+                                                    <Paperclip className="h-4 w-4 text-violet-500" />
+                                                    <span className="truncate">{quizFile?.name || lastImportedFileName}</span>
+                                                </div>
+                                            </div>
+                                        ) : null}
+
+                                        {quizError ? <p className="text-xs font-medium text-rose-500">{quizError}</p> : null}
+
+                                        <Button
+                                            type="button"
+                                            onClick={handleImportQuiz}
+                                            disabled={isImportingQuiz || !lessonId}
+                                            className="h-11 w-full rounded-2xl bg-violet-600 text-sm font-medium text-white hover:bg-violet-700"
+                                        >
+                                            {isImportingQuiz ? "Yuklanmoqda..." : "Testni yuklash"}
+                                        </Button>
+                                    </div>
+                                ) : null}
                             </div>
                         </div>
-                    </section>
-
-                    <Separator className="bg-slate-200 dark:bg-slate-800" />
-
-                    <section className="grid gap-5 xl:grid-cols-[0.9fr_1.1fr]">
-                        <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
-                            <div className="flex items-center gap-3">
-                                <div className="rounded-2xl bg-violet-100 p-3 text-violet-700 dark:bg-violet-500/10 dark:text-violet-200">
-                                    <FileQuestion className="h-5 w-5" />
-                                </div>
-                                <div>
-                                    <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Quiz import</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">`.docx` orqali quiz import va optional time limit.</p>
-                                </div>
-                            </div>
-
-                            <div className="mt-6 space-y-4">
-                                <div className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-3 dark:border-slate-800 dark:bg-slate-900/60">
-                                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-400 dark:text-slate-500">Tanlangan fayl</p>
-                                    <p className="mt-1 text-sm font-medium text-slate-950 dark:text-slate-100">
-                                        {quizFile?.name || lastImportedFileName || "Hali fayl tanlanmagan"}
-                                    </p>
-                                </div>
-
-                                <label className="flex cursor-pointer items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-slate-200 bg-slate-50 px-4 py-4 text-sm font-medium text-slate-600 hover:border-violet-300 hover:text-violet-700 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:border-violet-500/30 dark:hover:text-violet-200">
-                                    <Upload className="h-4 w-4" />
-                                    `.docx` tanlash
-                                    <input
-                                        type="file"
-                                        accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
-                                        onChange={handleQuizFileChange}
-                                        className="hidden"
-                                    />
-                                </label>
-
-                                <div>
-                                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Time limit (optional)</label>
-                                    <Input
-                                        type="number"
-                                        value={quizTimeLimit}
-                                        onChange={(event) => setQuizTimeLimit(event.target.value)}
-                                        placeholder="Masalan: 20"
-                                        className="h-11 rounded-2xl"
-                                    />
-                                </div>
-
-                                {quizError ? <p className="text-xs font-medium text-rose-500">{quizError}</p> : null}
-
-                                <Button
-                                    type="button"
-                                    onClick={handleImportQuiz}
-                                    disabled={isImportingQuiz || !lessonId}
-                                    className="h-11 w-full rounded-2xl bg-violet-600 text-sm font-medium text-white hover:bg-violet-700"
-                                >
-                                    {isImportingQuiz ? "Import qilinmoqda..." : "Quiz import qilish"}
-                                </Button>
-                            </div>
-                        </div>
 
                         <div className="rounded-[28px] border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:shadow-none">
                             <div className="flex items-center gap-3">
-                                <div className="rounded-2xl bg-slate-100 p-3 text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                                <div className={`rounded-2xl p-3 ${
+                                    activeComposer === "homework"
+                                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-200"
+                                        : activeComposer === "resource"
+                                            ? "bg-blue-100 text-blue-700 dark:bg-blue-500/10 dark:text-blue-200"
+                                            : "bg-violet-100 text-violet-700 dark:bg-violet-500/10 dark:text-violet-200"
+                                }`}>
                                     <FileTextIcon className="h-5 w-5" />
                                 </div>
                                 <div>
-                                    <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">Mavjud lesson bloklar</h3>
-                                    <p className="text-sm text-slate-500 dark:text-slate-400">Saqlangan homework, resource va quiz shu yerda ko‘rinadi.</p>
+                                    <h3 className="text-xl font-semibold text-slate-950 dark:text-slate-100">
+                                        {activeComposer === "homework" ? "Mavjud vazifalar" : activeComposer === "resource" ? "Mavjud resurslar" : "Mavjud testlar"}
+                                    </h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">
+                                        {activeComposer === "homework"
+                                            ? "Saqlangan vazifalar shu yerda ko‘rinadi."
+                                            : activeComposer === "resource"
+                                                ? "Saqlangan resurslar shu yerda ko‘rinadi."
+                                                : "Saqlangan testlar shu yerda ko‘rinadi."}
+                                    </p>
                                 </div>
                             </div>
 
@@ -885,15 +1147,19 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
                                     <div className="rounded-[20px] border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
                                         Bloklar yuklanmoqda...
                                     </div>
-                                ) : lessonTasks.length === 0 && lessonResources.length === 0 ? (
+                                ) : visibleTasks.length === 0 && visibleResources.length === 0 ? (
                                     <div className="rounded-[20px] border border-dashed border-slate-200 bg-slate-50/80 px-4 py-6 text-sm text-slate-500 dark:border-slate-800 dark:bg-slate-900/60 dark:text-slate-400">
-                                        Hozircha homework, resource yoki quiz birikmagan.
+                                        {activeComposer === "homework"
+                                            ? "Hozircha vazifa birikmagan."
+                                            : activeComposer === "resource"
+                                                ? "Hozircha resurs birikmagan."
+                                                : "Hozircha test birikmagan."}
                                     </div>
                                 ) : (
                                     <>
-                                        {lessonTasks.map((task) => {
+                                        {visibleTasks.map((task) => {
                                             const meta = blockTypeMeta[task.type] || {
-                                                label: task.type || "Task",
+                                                label: task.type || "Blok",
                                                 badge: "bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300",
                                             };
 
@@ -916,9 +1182,7 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
                                             );
                                         })}
 
-                                        {lessonResources
-                                            .filter((resource) => !lessonTasks.some((task) => task.title === resource.title))
-                                            .map((resource) => (
+                                        {visibleResources.map((resource) => (
                                                 <div
                                                     key={resource.id}
                                                     className="rounded-[20px] border border-slate-200 bg-slate-50/80 px-4 py-4 dark:border-slate-800 dark:bg-slate-900/60"
@@ -926,7 +1190,7 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
                                                     <div className="flex items-start justify-between gap-3">
                                                         <p className="text-sm font-medium text-slate-950 dark:text-slate-100">{resource.title}</p>
                                                         <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-[11px] font-medium text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
-                                                            Resource
+                                                            Resurs
                                                         </span>
                                                     </div>
                                                     <div className="mt-3 flex flex-wrap gap-2">
@@ -953,7 +1217,8 @@ export default function AddLesson({lessonId: propLessonId, courseId: propCourseI
                             </div>
                         </div>
                     </section>
-
+                    </>
+                    ) : null}
                 </div>
             </ScrollArea>
         </div>

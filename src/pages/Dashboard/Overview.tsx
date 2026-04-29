@@ -141,7 +141,7 @@ export default function Overview() {
     ];
 
     const quickLinks = [
-        {label: "Yangi kurs", to: "/courses/add", hint: "Builderni ochish"},
+        {label: "Yangi kurs", to: "/courses/create", hint: "Kurs yaratish sahifasi"},
         {label: "Jamoa", to: "/users", hint: "Teacher va assistantlar"},
         {label: "Tekshiruv", to: "/students", hint: "Vazifa va quiz oqimi"},
     ];

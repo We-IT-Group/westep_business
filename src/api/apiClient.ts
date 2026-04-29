@@ -45,6 +45,8 @@ apiClient.interceptors.response.use(
                 setItem<string>("accessToken", data.accessToken);
                 setItem<string>("refreshToken", data.refreshToken);
                 apiClient.defaults.headers.Authorization = `Bearer ${data.accessToken}`;
+                originalRequest.headers = originalRequest.headers ?? {};
+                originalRequest.headers.Authorization = `Bearer ${data.accessToken}`;
                 return apiClient(originalRequest);
             } catch (err) {
                 removeItem("accessToken");

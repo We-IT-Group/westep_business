@@ -5,6 +5,10 @@ import {Module} from "../../types/types.ts";
 import {useNavigate} from "react-router-dom";
 import {showErrorToast} from "../../utils/toast.tsx";
 
+type UseAddLessonOptions = {
+    navigateOnSuccess?: boolean;
+};
+
 export const useGetLessons = (moduleId: string | undefined, openLesson: boolean) =>
     useQuery({
         queryKey: ["lessons", moduleId],
@@ -31,16 +35,16 @@ export const useGetLessonById = (id: string | undefined) =>
         enabled: !!id
     });
 
-export const useAddLesson = (courseId: string | undefined) => { // lessonCount bu yerda shart emas
+export const useAddLesson = (courseId: string | undefined, options?: UseAddLessonOptions) => { // lessonCount bu yerda shart emas
     const qc = useQueryClient();
     const navigate = useNavigate();
+    const navigateOnSuccess = options?.navigateOnSuccess ?? true;
 
     return useMutation({
         mutationFn: addLessons,
         onSuccess: (newLesson) => {
             qc.setQueryData(["modules", courseId], (oldModules: Module[] | undefined) => {
                 if (!oldModules) {
-                    console.log("Kesh topilmadi! Kalitni tekshiring.");
                     return undefined;
                 }
 
@@ -55,10 +59,12 @@ export const useAddLesson = (courseId: string | undefined) => { // lessonCount b
                 });
             });
             qc.invalidateQueries({queryKey: ["lessons"]});
-            navigate(`/courses/details/${courseId}/updateLesson/${newLesson.id}`, {state: {moduleId: newLesson.moduleId}});
+            if (navigateOnSuccess) {
+                navigate(`/courses/details/${courseId}/updateLesson/${newLesson.id}`, {state: {moduleId: newLesson.moduleId}});
+            }
         },
-        onError: (error: any) => {
-            console.error("Xatolik:", error);
+        onError: (error) => {
+            showErrorToast(error, "Lesson qo'shib bo'lmadi");
         },
     });
 };
@@ -87,7 +93,6 @@ export const useDeleteLesson = (courseId: string | undefined, moduleId: string) 
         mutationFn: deleteLessons,
         onSuccess: () => {
             const deletedLessonModuleId = moduleId
-            console.log(courseId)
 
             qc.setQueryData(["modules", courseId], (oldModules: Module[] | undefined) => {
                 if (!oldModules) return [];

@@ -92,11 +92,11 @@ export const useDeleteDiscussion = (lessonId?: string) => {
     });
 };
 
-export const useLessonTasksReview = (lessonId?: string) =>
+export const useLessonTasksReview = (lessonId?: string, enabled = true) =>
     useQuery({
         queryKey: ["lesson-review-tasks", lessonId],
         queryFn: () => getLessonTasksReview(lessonId || ""),
-        enabled: !!lessonId,
+        enabled: !!lessonId && enabled,
     });
 
 export const useHomeworkSubmissions = (taskId?: string) =>

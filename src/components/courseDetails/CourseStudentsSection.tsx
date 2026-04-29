@@ -1,31 +1,13 @@
-import {useEffect, useMemo, useState} from "react";
-import {useQueries} from "@tanstack/react-query";
-import {
-    BookOpen,
-    CheckCircle2,
-    ClipboardCheck,
-    LoaderCircle,
-    MessageSquare,
-    Phone,
-    Users,
-} from "lucide-react";
-import {Button} from "../ui/button.tsx";
+import {useMemo, useState} from "react";
+import {useFormik} from "formik";
+import * as Yup from "yup";
+import {Copy, LoaderCircle, Phone, Search, UserPlus} from "lucide-react";
 import {useCourseStudents} from "../../api/courseStudents/useCourseStudents.ts";
-import {useGetModules} from "../../api/module/useModule.ts";
-import {getAllLessons} from "../../api/lessons/lessonApi.ts";
-import {
-    DiscussionThread,
-    getHomeworkSubmissionsReview,
-    getLessonDiscussions,
-    getLessonTasksReview,
-    getQuizResultsByTask,
-    HomeworkSubmissionReview,
-    LessonTaskReview,
-    QuizResultSummary,
-} from "../../api/lessonReview/lessonReviewApi.ts";
-import {Lesson, Module} from "../../types/types.ts";
-
-type StudentTab = "homework" | "quiz" | "message";
+import {useToast} from "../../hooks/useToast.tsx";
+import {useCreateBusinessStudent} from "../../api/courseStudents/useBusinessStudents.ts";
+import {BusinessStudentCreateResponse} from "../../api/courseStudents/businessStudentsApi.ts";
+import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} from "../ui/dialog.tsx";
+import {Button} from "../ui/button.tsx";
 
 const formatDateTime = (value?: string) => {
     if (!value) return "Faollik yo‘q";
@@ -33,403 +15,345 @@ const formatDateTime = (value?: string) => {
     const date = new Date(value);
     if (Number.isNaN(date.getTime())) return value;
 
-    return new Intl.DateTimeFormat("uz-UZ", {
-        dateStyle: "medium",
-        timeStyle: "short",
-    }).format(date);
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+
+    return `${day}.${month}.${year}`;
 };
 
-const matchesStudent = (
-    entry: {studentId?: string; studentName?: string; author?: string},
-    selectedStudent: {studentId: string; studentName: string},
-) => {
-    if (entry.studentId && selectedStudent.studentId) {
-        return entry.studentId === selectedStudent.studentId;
-    }
-
-    const left = (entry.studentName || entry.author || "").trim().toLowerCase();
-    const right = selectedStudent.studentName.trim().toLowerCase();
-    return Boolean(left && right && left === right);
+const getStudentInitial = (name: string) => {
+    const trimmed = name.trim();
+    return trimmed ? trimmed[0].toUpperCase() : "S";
 };
 
-const tabs: Array<{id: StudentTab; label: string; icon: typeof ClipboardCheck}> = [
-    {id: "homework", label: "Uyga vazifa", icon: ClipboardCheck},
-    {id: "quiz", label: "Test", icon: CheckCircle2},
-    {id: "message", label: "Message", icon: MessageSquare},
-];
+const getProgressTone = (value: number) => {
+    if (value >= 80) return "bg-emerald-400";
+    if (value >= 50) return "bg-amber-400";
+    return "bg-orange-500";
+};
+
+type StudentCreateForm = {
+    phone: string;
+    firstName: string;
+    lastName: string;
+};
 
 export default function CourseStudentsSection({courseId}: {courseId: string}) {
+    const toast = useToast();
+    const {mutateAsync: createStudent, isPending: isCreatingStudent} = useCreateBusinessStudent();
     const {data: students = [], isLoading: isStudentsLoading, isError, error} = useCourseStudents(courseId);
-    const {data: modules = [], isLoading: isModulesLoading} = useGetModules(courseId);
-    const [selectedStudentCourseId, setSelectedStudentCourseId] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState<StudentTab>("homework");
+    const [search, setSearch] = useState("");
+    const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+    const [createdStudent, setCreatedStudent] = useState<BusinessStudentCreateResponse | null>(null);
+    const [isCredentialsCopied, setIsCredentialsCopied] = useState(false);
 
-    const lessonQueries = useQueries({
-        queries: modules.map((module: Module) => ({
-            queryKey: ["lessons", module.id],
-            queryFn: () => getAllLessons(module.id),
-            enabled: modules.length > 0,
-            staleTime: 60_000,
-        })),
-    });
-
-    const lessons = useMemo(
-        () => lessonQueries.flatMap((query) => (query.data || []) as Lesson[]),
-        [lessonQueries],
-    );
-
-    useEffect(() => {
-        if (!students.length) {
-            setSelectedStudentCourseId(null);
-            return;
-        }
-
-        setSelectedStudentCourseId((prev) =>
-            prev && students.some((student) => student.studentCourseId === prev)
-                ? prev
-                : students[0].studentCourseId,
-        );
-    }, [students]);
-
-    const selectedStudent = useMemo(
-        () => students.find((student) => student.studentCourseId === selectedStudentCourseId) || null,
-        [selectedStudentCourseId, students],
-    );
-
-    const taskQueries = useQueries({
-        queries: lessons.map((lesson) => ({
-            queryKey: ["lesson-review-tasks", lesson.id],
-            queryFn: () => getLessonTasksReview(lesson.id),
-            enabled: lessons.length > 0,
-            staleTime: 60_000,
-        })),
-    });
-
-    const allTasks = useMemo(
-        () => taskQueries.flatMap((query) => (query.data || []) as LessonTaskReview[]),
-        [taskQueries],
-    );
-
-    const homeworkTaskIds = useMemo(
-        () => allTasks.filter((task) => task.type === "HOMEWORK").map((task) => task.id),
-        [allTasks],
-    );
-
-    const quizTaskIds = useMemo(
-        () => allTasks.filter((task) => task.type === "QUIZ").map((task) => task.id),
-        [allTasks],
-    );
-
-    const homeworkQueries = useQueries({
-        queries: homeworkTaskIds.map((taskId) => ({
-            queryKey: ["lesson-homework-submissions", taskId],
-            queryFn: () => getHomeworkSubmissionsReview(taskId),
-            enabled: !!selectedStudent && homeworkTaskIds.length > 0,
-            staleTime: 60_000,
-        })),
-    });
-
-    const quizQueries = useQueries({
-        queries: quizTaskIds.map((taskId) => ({
-            queryKey: ["lesson-quiz-results", taskId],
-            queryFn: () => getQuizResultsByTask(taskId),
-            enabled: !!selectedStudent && quizTaskIds.length > 0,
-            staleTime: 60_000,
-        })),
-    });
-
-    const discussionQueries = useQueries({
-        queries: lessons.map((lesson) => ({
-            queryKey: ["lesson-discussions", lesson.id],
-            queryFn: () => getLessonDiscussions(lesson.id),
-            enabled: !!selectedStudent && lessons.length > 0,
-            staleTime: 60_000,
-        })),
-    });
-
-    const homeworkItems = useMemo(() => {
-        if (!selectedStudent) return [];
-
-        return homeworkQueries
-            .flatMap((query) => (query.data || []) as HomeworkSubmissionReview[])
-            .filter((item) => matchesStudent(item, selectedStudent));
-    }, [homeworkQueries, selectedStudent]);
-
-    const quizItems = useMemo(() => {
-        if (!selectedStudent) return [];
-
-        return quizQueries
-            .flatMap((query) => (query.data || []) as QuizResultSummary[])
-            .filter((item) => matchesStudent(item, selectedStudent));
-    }, [quizQueries, selectedStudent]);
-
-    const messageItems = useMemo(() => {
-        if (!selectedStudent) return [];
-
-        return discussionQueries
-            .flatMap((query) => (query.data || []) as DiscussionThread[])
-            .flatMap((thread) => {
-                const entries = [];
-
-                if (matchesStudent({author: thread.author, studentId: thread.studentId}, selectedStudent)) {
-                    entries.push({
-                        id: thread.id,
-                        type: "comment",
-                        content: thread.content,
-                        createdAt: thread.createdAt,
-                    });
-                }
-
-                thread.replies.forEach((reply) => {
-                    if (matchesStudent({author: reply.author, studentId: reply.studentId}, selectedStudent)) {
-                        entries.push({
-                            id: reply.id,
-                            type: "reply",
-                            content: reply.content,
-                            createdAt: reply.createdAt,
-                        });
-                    }
+    const createStudentFormik = useFormik<StudentCreateForm>({
+        initialValues: {
+            phone: "",
+            firstName: "",
+            lastName: "",
+        },
+        validationSchema: Yup.object({
+            phone: Yup.string()
+                .trim()
+                .required("Telefon raqamini kiriting")
+                .matches(/^998\d{9}$/, "Telefon formati 998901234567 ko‘rinishida bo‘lsin"),
+            firstName: Yup.string().trim().required("Ismni kiriting"),
+            lastName: Yup.string().trim().required("Familiyani kiriting"),
+        }),
+        onSubmit: async (values, helpers) => {
+            try {
+                const result = await createStudent({
+                    phone: values.phone.trim(),
+                    firstName: values.firstName.trim(),
+                    lastName: values.lastName.trim(),
                 });
+                setCreatedStudent(result);
+                setIsCredentialsCopied(false);
+                helpers.resetForm();
+                helpers.setStatus(undefined);
+            } catch (submitError) {
+                helpers.setStatus(submitError instanceof Error ? submitError.message : "Student qo‘shib bo‘lmadi.");
+            }
+        },
+    });
 
-                return entries;
-            })
-            .sort((left, right) => (right.createdAt || "").localeCompare(left.createdAt || ""));
-    }, [discussionQueries, selectedStudent]);
+    const filteredStudents = useMemo(() => {
+        const query = search.trim().toLowerCase();
+        if (!query) return students;
 
-    const isDetailLoading =
-        lessonQueries.some((query) => query.isLoading || query.isFetching)
-        || taskQueries.some((query) => query.isLoading)
-        || homeworkQueries.some((query) => query.isLoading)
-        || quizQueries.some((query) => query.isLoading)
-        || discussionQueries.some((query) => query.isLoading);
+        return students.filter((student) => {
+            const name = student.studentName.toLowerCase();
+            const phone = (student.phone || "").toLowerCase();
+            return name.includes(query) || phone.includes(query);
+        });
+    }, [search, students]);
+
+    const handleCloseCreateDialog = () => {
+        setIsCreateDialogOpen(false);
+        setCreatedStudent(null);
+        setIsCredentialsCopied(false);
+        createStudentFormik.resetForm();
+        createStudentFormik.setStatus(undefined);
+    };
+
+    const handleCopyCredentials = async () => {
+        if (!createdStudent) return;
+
+        const credentials = `Student muvaffaqiyatli qo‘shildi. Login: ${createdStudent.phone}, vaqtinchalik parol: ${createdStudent.temporaryPassword}`;
+        try {
+            await navigator.clipboard.writeText(credentials);
+            setIsCredentialsCopied(true);
+            toast.success("Ma’lumot nusxalandi");
+        } catch {
+            toast.error("Nusxalab bo‘lmadi");
+        }
+    };
 
     return (
-        <div className="flex min-h-[760px] flex-col">
-            <div className="grid h-full grid-cols-1 lg:grid-cols-12">
-                <div className="border-r border-slate-100 bg-slate-50/30 p-6 lg:col-span-5">
-                    <div className="mb-6">
-                        <h3 className="text-lg font-black tracking-tight text-slate-900">Kurs studentlari</h3>
-                        <p className="text-xs font-black uppercase tracking-widest text-slate-400">Course audience monitor</p>
+        <div className="min-h-[760px] rounded-[28px] border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
+            <div className="border-b border-slate-200 px-7 py-6 dark:border-slate-800">
+                <div className="flex flex-col gap-5 xl:flex-row xl:items-start xl:justify-between">
+                    <div>
+                        <h3 className="text-3xl font-semibold tracking-tight text-slate-950 dark:text-slate-100">O‘quvchilar</h3>
+                        <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Kursga biriktirilgan studentlar, progress va faoliyat.</p>
                     </div>
 
-                    {isStudentsLoading || isModulesLoading ? (
-                        <div className="flex flex-col items-center justify-center py-20">
-                            <LoaderCircle className="mb-4 h-10 w-10 animate-spin text-blue-600" />
-                            <p className="text-xs font-black uppercase tracking-widest text-slate-400">Studentlar yuklanmoqda...</p>
+                    <div className="flex flex-wrap gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsCreateDialogOpen(true)}
+                            className="inline-flex h-12 items-center gap-3 rounded-[18px] bg-[#48bf45] px-5 text-base font-semibold text-white transition hover:bg-[#3dab3a]"
+                        >
+                            <UserPlus className="h-6 w-6" />
+                            O‘quvchilarni qo‘shish
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="px-3 pb-3 pt-5">
+                <div className="rounded-[26px] border border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/60">
+                    <div className="border-b border-slate-200 px-4 py-4 dark:border-slate-800">
+                        <div className="relative">
+                            <Search className="pointer-events-none absolute left-6 top-1/2 h-6 w-6 -translate-y-1/2 text-slate-400 dark:text-slate-500" />
+                            <input
+                                type="text"
+                                value={search}
+                                onChange={(event) => setSearch(event.target.value)}
+                                placeholder="Qidirish"
+                                className="h-14 w-full rounded-[20px] border border-slate-200 bg-white pl-16 pr-5 text-base text-slate-900 placeholder:text-slate-400 outline-none transition focus:border-blue-200 focus:bg-white dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-slate-600"
+                            />
                         </div>
-                    ) : isError ? (
-                        <div className="rounded-[28px] border border-rose-100 bg-rose-50 p-5 text-sm font-medium text-rose-600">
-                            {error instanceof Error ? error.message : "Studentlar yuklanmadi."}
-                        </div>
-                    ) : students.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center rounded-[32px] border border-dashed border-slate-200 bg-white px-6 py-16 text-center">
-                            <Users className="mb-4 h-12 w-12 text-slate-300" />
-                            <h4 className="text-lg font-black text-slate-900">Studentlar topilmadi</h4>
-                            <p className="mt-2 text-sm font-medium text-slate-400">Bu kursga hali student biriktirilmagan.</p>
-                        </div>
-                    ) : (
-                        <div className="space-y-3">
-                            {students.map((student) => {
-                                const isActive = student.studentCourseId === selectedStudentCourseId;
-                                return (
-                                    <button
+                    </div>
+
+                    <div className="overflow-x-auto">
+                        <div className="min-w-[1160px] px-4 pb-6">
+                            <div className="grid grid-cols-[2.1fr_1fr_0.9fr_0.8fr_0.8fr_0.8fr_1.2fr] gap-4 border-b border-slate-200 px-2 py-5 text-sm font-semibold text-slate-700 dark:border-slate-800 dark:text-slate-200">
+                                <div className="flex items-center gap-3">
+                                    <span>O‘quvchi</span>
+                                    <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-slate-900 text-lg font-semibold text-white dark:bg-white dark:text-slate-950">
+                                        {filteredStudents.length}
+                                    </span>
+                                </div>
+                                <div>Darslar</div>
+                                <div>Progress</div>
+                                <div>Vazifa</div>
+                                <div>Test</div>
+                                <div>Xabar</div>
+                                <div>Faollik</div>
+                            </div>
+
+                            {isStudentsLoading ? (
+                                <div className="flex items-center justify-center px-4 py-20 text-slate-500 dark:text-slate-400">
+                                    <LoaderCircle className="mr-3 h-6 w-6 animate-spin" />
+                                    O‘quvchilar yuklanmoqda...
+                                </div>
+                            ) : isError ? (
+                                <div className="px-4 py-16 text-center text-rose-500 dark:text-rose-300">
+                                    {error instanceof Error ? error.message : "O‘quvchilar yuklanmadi."}
+                                </div>
+                            ) : filteredStudents.length === 0 ? (
+                                <div className="px-4 py-20 text-center text-slate-500 dark:text-slate-400">
+                                    O‘quvchilar topilmadi.
+                                </div>
+                            ) : (
+                                filteredStudents.map((student) => (
+                                    <div
                                         key={student.studentCourseId}
-                                        type="button"
-                                        onClick={() => {
-                                            setSelectedStudentCourseId(student.studentCourseId);
-                                            setActiveTab("homework");
-                                        }}
-                                        className={`w-full rounded-[28px] border p-5 text-left transition ${
-                                            isActive
-                                                ? "border-blue-200 bg-white shadow-xl shadow-slate-200/50"
-                                                : "border-slate-200 bg-white hover:border-slate-300 hover:shadow-md"
-                                        }`}
+                                        className="grid w-full grid-cols-[2.1fr_1fr_0.9fr_0.8fr_0.8fr_0.8fr_1.2fr] gap-4 rounded-2xl px-2 py-6 text-left transition hover:bg-white/70 dark:hover:bg-white/[0.03]"
                                     >
-                                        <div className="flex items-start justify-between gap-4">
-                                            <div>
-                                                <div className="text-lg font-black tracking-tight text-slate-900">{student.studentName}</div>
-                                                <div className="mt-2 flex items-center gap-2 text-sm font-medium text-slate-500">
+                                        <div className="flex items-center gap-4">
+                                            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#46cf43] text-2xl font-semibold text-white">
+                                                {getStudentInitial(student.studentName)}
+                                                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#48bf45] ring-2 ring-white dark:ring-slate-950" />
+                                            </div>
+                                            <div className="min-w-0">
+                                                <div className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{student.studentName}</div>
+                                                <div className="mt-1 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
                                                     <Phone className="h-4 w-4" />
                                                     {student.phone || "Telefon yo‘q"}
                                                 </div>
                                             </div>
-                                            <div className="rounded-2xl bg-blue-50 px-3 py-2 text-right">
-                                                <div className="text-xl font-black text-blue-700">{student.progressPercentage}%</div>
-                                                <div className="text-[10px] font-black uppercase tracking-widest text-blue-500">Progress</div>
+                                        </div>
+
+                                        <div className="self-center">
+                                            <div className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                                                {student.completedLessons}/{student.totalLessons}
+                                            </div>
+                                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">Tugallangan darslar</div>
+                                        </div>
+
+                                        <div className="self-center">
+                                            <div className="flex items-center gap-3">
+                                                <span className={`h-7 w-7 rounded-full ${getProgressTone(student.progressPercentage)}`} />
+                                                <span className="text-base font-semibold text-slate-900 dark:text-slate-100">{student.progressPercentage} %</span>
                                             </div>
                                         </div>
 
-                                        <div className="mt-4 grid grid-cols-2 gap-2 xl:grid-cols-3">
-                                            <StatPill label="Darslar" value={`${student.completedLessons}/${student.totalLessons}`} />
-                                            <StatPill label="Homework" value={student.homeworkSubmissionsCount} />
-                                            <StatPill label="Test" value={student.quizAttemptsCount} />
-                                            <StatPill label="Message" value={student.messageCount} />
-                                            <StatPill label="Faollik" value={formatDateTime(student.lastActivityAt)} wide />
+                                        <div className="self-center text-base font-semibold text-slate-900 dark:text-slate-100">
+                                            {student.homeworkSubmissionsCount}
                                         </div>
-                                    </button>
-                                );
-                            })}
+                                        <div className="self-center text-base font-semibold text-slate-900 dark:text-slate-100">
+                                            {student.quizAttemptsCount}
+                                        </div>
+                                        <div className="self-center text-base font-semibold text-slate-900 dark:text-slate-100">
+                                            {student.messageCount}
+                                        </div>
+                                        <div className="self-center">
+                                            <div className="text-sm font-medium text-slate-700 dark:text-slate-200">{formatDateTime(student.lastActivityAt)}</div>
+                                        </div>
+                                    </div>
+                                ))
+                            )}
                         </div>
-                    )}
+                    </div>
                 </div>
+            </div>
 
-                <div className="flex flex-col p-8 lg:col-span-7">
-                    {selectedStudent ? (
-                        <>
-                            <div className="mb-6 flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+            <Dialog open={isCreateDialogOpen} onOpenChange={(open) => (!open ? handleCloseCreateDialog() : setIsCreateDialogOpen(true))}>
+                <DialogContent className="max-w-xl rounded-[28px] border border-slate-200 bg-white p-0 dark:border-slate-800 dark:bg-slate-950">
+                    <div className="border-b border-slate-200 px-6 py-5 dark:border-slate-800">
+                        <DialogHeader className="text-left">
+                            <DialogTitle className="text-2xl font-semibold text-slate-950 dark:text-slate-100">
+                                O‘quvchi qo‘shish
+                            </DialogTitle>
+                            <DialogDescription className="text-sm text-slate-500 dark:text-slate-400">
+                                Telefon, ism va familiyani kiriting. Student uchun vaqtinchalik parol backend tomonidan yaratiladi.
+                            </DialogDescription>
+                        </DialogHeader>
+                    </div>
+
+                    {createdStudent ? (
+                        <div className="space-y-5 px-6 py-6">
+                            <div className="rounded-[24px] border border-emerald-200 bg-emerald-50 px-5 py-5 dark:border-emerald-500/20 dark:bg-emerald-500/10">
+                                <p className="text-base font-semibold text-emerald-800 dark:text-emerald-200">
+                                    Student muvaffaqiyatli qo‘shildi.
+                                </p>
+                                <p className="mt-3 text-sm text-emerald-700 dark:text-emerald-300">
+                                    Login: <span className="font-semibold">{createdStudent.phone}</span>
+                                </p>
+                                <p className="mt-1 text-sm text-emerald-700 dark:text-emerald-300">
+                                    Vaqtinchalik parol: <span className="font-semibold">{createdStudent.temporaryPassword}</span>
+                                </p>
+                            </div>
+
+                            <div className="flex flex-wrap justify-end gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleCopyCredentials}
+                                    className="h-11 rounded-xl px-4"
+                                >
+                                    <Copy className="h-4 w-4" />
+                                    {isCredentialsCopied ? "Nusxalandi" : "Nusxalash"}
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={handleCloseCreateDialog}
+                                    className="h-11 rounded-xl bg-slate-900 px-4 text-white hover:bg-black dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100"
+                                >
+                                    Yopish
+                                </Button>
+                            </div>
+                        </div>
+                    ) : (
+                        <form onSubmit={createStudentFormik.handleSubmit} className="space-y-5 px-6 py-6">
+                            <div>
+                                <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Telefon</label>
+                                <input
+                                    name="phone"
+                                    value={createStudentFormik.values.phone}
+                                    onChange={createStudentFormik.handleChange}
+                                    onBlur={createStudentFormik.handleBlur}
+                                    placeholder="998901234567"
+                                    className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                                />
+                                {createStudentFormik.touched.phone && createStudentFormik.errors.phone ? (
+                                    <p className="mt-2 text-xs font-medium text-rose-500">{createStudentFormik.errors.phone}</p>
+                                ) : null}
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
-                                    <h4 className="text-2xl font-black tracking-tight text-slate-900">{selectedStudent.studentName}</h4>
-                                    <p className="mt-2 text-sm font-medium text-slate-500">
-                                        Homework, test va message detallarini bitta joyda ko‘ring.
-                                    </p>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Ism</label>
+                                    <input
+                                        name="firstName"
+                                        value={createStudentFormik.values.firstName}
+                                        onChange={createStudentFormik.handleChange}
+                                        onBlur={createStudentFormik.handleBlur}
+                                        placeholder="Ali"
+                                        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                                    />
+                                    {createStudentFormik.touched.firstName && createStudentFormik.errors.firstName ? (
+                                        <p className="mt-2 text-xs font-medium text-rose-500">{createStudentFormik.errors.firstName}</p>
+                                    ) : null}
                                 </div>
 
-                                <div className="flex flex-wrap gap-2">
-                                    {tabs.map((tab) => {
-                                        const isActive = activeTab === tab.id;
-                                        return (
-                                            <Button
-                                                key={tab.id}
-                                                type="button"
-                                                onClick={() => setActiveTab(tab.id)}
-                                                className={`h-11 rounded-2xl px-5 text-xs font-black uppercase tracking-[0.2em] ${
-                                                    isActive
-                                                        ? "bg-slate-900 text-white hover:bg-black"
-                                                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
-                                                }`}
-                                            >
-                                                <tab.icon className="h-4 w-4" />
-                                                {tab.label}
-                                            </Button>
-                                        );
-                                    })}
+                                <div>
+                                    <label className="mb-2 block text-sm font-medium text-slate-700 dark:text-slate-300">Familiya</label>
+                                    <input
+                                        name="lastName"
+                                        value={createStudentFormik.values.lastName}
+                                        onChange={createStudentFormik.handleChange}
+                                        onBlur={createStudentFormik.handleBlur}
+                                        placeholder="Valiyev"
+                                        className="h-12 w-full rounded-2xl border border-slate-200 bg-white px-4 text-sm text-slate-900 outline-none transition focus:border-blue-300 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-100"
+                                    />
+                                    {createStudentFormik.touched.lastName && createStudentFormik.errors.lastName ? (
+                                        <p className="mt-2 text-xs font-medium text-rose-500">{createStudentFormik.errors.lastName}</p>
+                                    ) : null}
                                 </div>
                             </div>
 
-                            {isDetailLoading ? (
-                                <div className="flex flex-1 flex-col items-center justify-center py-20">
-                                    <LoaderCircle className="mb-4 h-10 w-10 animate-spin text-blue-600" />
-                                    <p className="text-xs font-black uppercase tracking-widest text-slate-400">Student detail yuklanmoqda...</p>
+                            {createStudentFormik.status ? (
+                                <div className="rounded-2xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-600 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-300">
+                                    {createStudentFormik.status}
                                 </div>
-                            ) : activeTab === "homework" ? (
-                                <HomeworkDetailList items={homeworkItems} />
-                            ) : activeTab === "quiz" ? (
-                                <QuizDetailList items={quizItems} />
-                            ) : (
-                                <MessageDetailList items={messageItems} />
-                            )}
-                        </>
-                    ) : (
-                        <div className="flex flex-1 flex-col items-center justify-center py-20 text-center">
-                            <Users className="mb-4 h-12 w-12 text-slate-300" />
-                            <h4 className="text-lg font-black text-slate-900">Studentni tanlang</h4>
-                            <p className="mt-2 max-w-sm text-sm font-medium text-slate-400">Chap tomondan student tanlasangiz, homework, test va message detail shu yerda ochiladi.</p>
-                        </div>
+                            ) : null}
+
+                            <div className="flex flex-wrap justify-end gap-3">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={handleCloseCreateDialog}
+                                    className="h-11 rounded-xl px-4"
+                                >
+                                    Bekor qilish
+                                </Button>
+                                <Button
+                                    type="submit"
+                                    disabled={isCreatingStudent}
+                                    className="h-11 rounded-xl bg-[#48bf45] px-4 text-white hover:bg-[#3dab3a]"
+                                >
+                                    {isCreatingStudent ? "Saqlanmoqda..." : "O‘quvchini qo‘shish"}
+                                </Button>
+                            </div>
+                        </form>
                     )}
-                </div>
-            </div>
-        </div>
-    );
-}
-
-function StatPill({label, value, wide = false}: {label: string; value: string | number; wide?: boolean}) {
-    return (
-        <div className={`rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 ${wide ? "col-span-2 xl:col-span-3" : ""}`}>
-            <div className="text-[10px] font-black uppercase tracking-widest text-slate-400">{label}</div>
-            <div className="mt-1 text-sm font-bold text-slate-900">{value}</div>
-        </div>
-    );
-}
-
-function EmptyState({title, description}: {title: string; description: string}) {
-    return (
-        <div className="flex flex-1 flex-col items-center justify-center rounded-[32px] border border-dashed border-slate-200 bg-slate-50/60 px-6 py-16 text-center">
-            <BookOpen className="mb-4 h-10 w-10 text-slate-300" />
-            <h5 className="text-lg font-black text-slate-900">{title}</h5>
-            <p className="mt-2 max-w-md text-sm font-medium text-slate-400">{description}</p>
-        </div>
-    );
-}
-
-function HomeworkDetailList({items}: {items: HomeworkSubmissionReview[]}) {
-    if (!items.length) {
-        return <EmptyState title="Homework topilmadi" description="Bu student uchun homework submission hozircha yo‘q." />;
-    }
-
-    return (
-        <div className="space-y-4">
-            {items.map((item) => (
-                <div key={item.submissionId} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <div className="text-lg font-black text-slate-900">{item.taskTitle || "Homework"}</div>
-                            <div className="mt-2 text-sm font-medium text-slate-500">{item.lessonName || "Lesson"}</div>
-                        </div>
-                        <div className="rounded-2xl bg-emerald-50 px-3 py-2 text-right">
-                            <div className="text-sm font-black text-emerald-700">{item.score ?? "-"}</div>
-                            <div className="text-[10px] font-black uppercase tracking-widest text-emerald-500">Score</div>
-                        </div>
-                    </div>
-                    <div className="mt-4 text-sm leading-7 text-slate-600">{item.comment || "Izoh qoldirilmagan."}</div>
-                    <div className="mt-4 text-xs font-semibold text-slate-400">
-                        Yuborilgan vaqt: {formatDateTime(item.submittedAt)}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function QuizDetailList({items}: {items: QuizResultSummary[]}) {
-    if (!items.length) {
-        return <EmptyState title="Test natijalari topilmadi" description="Bu student uchun quiz urinishlari hozircha yo‘q." />;
-    }
-
-    return (
-        <div className="space-y-4">
-            {items.map((item) => (
-                <div key={item.sessionId} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-start justify-between gap-4">
-                        <div>
-                            <div className="text-lg font-black text-slate-900">{item.taskTitle || "Quiz"}</div>
-                            <div className="mt-2 text-sm font-medium text-slate-500">{item.lessonName || "Lesson"}</div>
-                        </div>
-                        <div className="rounded-2xl bg-blue-50 px-3 py-2 text-right">
-                            <div className="text-sm font-black text-blue-700">{item.percentage ?? 0}%</div>
-                            <div className="text-[10px] font-black uppercase tracking-widest text-blue-500">Natija</div>
-                        </div>
-                    </div>
-                    <div className="mt-4 grid grid-cols-2 gap-3">
-                        <StatPill label="To‘g‘ri" value={item.correct ?? 0} />
-                        <StatPill label="Jami" value={item.total ?? 0} />
-                    </div>
-                    <div className="mt-4 text-xs font-semibold text-slate-400">
-                        Tugagan vaqt: {formatDateTime(item.finishedAt || item.startedAt)}
-                    </div>
-                </div>
-            ))}
-        </div>
-    );
-}
-
-function MessageDetailList({items}: {items: Array<{id: string; type: string; content: string; createdAt?: string}>}) {
-    if (!items.length) {
-        return <EmptyState title="Message topilmadi" description="Bu student uchun discussion yoki comment hozircha topilmadi." />;
-    }
-
-    return (
-        <div className="space-y-4">
-            {items.map((item) => (
-                <div key={item.id} className="rounded-[28px] border border-slate-200 bg-white p-5 shadow-sm">
-                    <div className="flex items-center justify-between gap-4">
-                        <div className="text-sm font-black uppercase tracking-widest text-slate-400">
-                            {item.type === "reply" ? "Reply" : "Comment"}
-                        </div>
-                        <div className="text-xs font-semibold text-slate-400">{formatDateTime(item.createdAt)}</div>
-                    </div>
-                    <div className="mt-4 text-sm leading-7 text-slate-600">{item.content}</div>
-                </div>
-            ))}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -2,9 +2,21 @@ import apiClient from "../apiClient.ts";
 import {Course} from "../../types/types.ts";
 import {parseApiError} from "../../utils/apiError.ts";
 
-type addCourse = Pick<Course, "name" | "description" | "id" | "attachmentId"> & {
+export type CoursePayload = Pick<Course,
+    | "name"
+    | "description"
+    | "fullDescription"
+    | "primaryCategoryId"
+    | "subcategoryId"
+    | "skillTagIds"
+    | "languageId"
+    | "attachmentId"
+    | "trailerVideoUrl"
+> & {
+    id?: string;
     businessId?: string;
 };
+
 type CourseRecord = Partial<Course> & {
     id: string;
     name: string;
@@ -45,8 +57,15 @@ const normalizeCourse = (value: unknown): Course | null => {
         active: Boolean(value.active ?? value.isActive),
         isPublished: Boolean(value.isPublished ?? value.published),
         description: value.description || "",
+        fullDescription: value.fullDescription || "",
         publishedAt: value.publishedAt || "",
         businessId: value.businessId || "",
+        languageId: value.languageId || "",
+        languageName: value.languageName || "",
+        languageCode: value.languageCode || "",
+        createdBy: value.createdBy || "",
+        createdByFullName: value.createdByFullName || "",
+        skillTagIds: value.skillTagIds || [],
     } as Course;
 };
 
@@ -84,7 +103,7 @@ const normalizeCourseList = (response: CoursesResponse | undefined) => (
         .filter((course): course is Course => Boolean(course))
 );
 
-export const addCourses = async (body: Omit<addCourse, "id">) => {
+export const addCourses = async (body: CoursePayload) => {
     try {
         const {data} = await apiClient.post("/course", body);
         return normalizeCourse(data) || normalizeCourse((data as {data?: unknown})?.data) || data;
@@ -93,7 +112,7 @@ export const addCourses = async (body: Omit<addCourse, "id">) => {
     }
 };
 
-export const updateCourse = async (body: addCourse) => {
+export const updateCourse = async (body: CoursePayload & {id: string}) => {
     try {
         await apiClient.put("/course/" + body.id, body);
     } catch (error) {

@@ -31,6 +31,8 @@ export interface User {
 export interface Course extends Common {
     name: string,
     description: string,
+    fullDescription?: string,
+    price?: number,
     isPublished: boolean,
     published?: boolean,
     status?: string,
@@ -39,6 +41,25 @@ export interface Course extends Common {
     businessId: string
     attachmentId?: string | null,
     attachmentUrl?: string,
+    primaryCategoryId?: string,
+    primaryCategoryName?: string,
+    subcategoryId?: string,
+    subcategoryName?: string,
+    skillTagIds?: string[],
+    languageId?: string,
+    languageName?: string,
+    languageCode?: string,
+    trailerVideoUrl?: string,
+    createdBy?: string,
+    createdByFullName?: string,
+}
+
+export interface TaxonomyOption {
+    id: string;
+    name: string;
+    code?: string;
+    parentId?: string;
+    categoryId?: string;
 }
 
 export interface Module extends Common {
@@ -48,15 +69,21 @@ export interface Module extends Common {
     orderIndex: number | null,
     price: number,
     lessonCount: number,
+    active?: boolean,
 }
+
+export type LessonType = "LESSON" | "PRACTICE";
 
 export interface Lesson extends Common {
     name: string,
     description?: string,
     moduleId: string,
+    type?: LessonType,
     orderIndex: number | null,
     estimatedDuration: number | null,
+    watchCompletionPercent?: number | null,
     videoUrl?: string,
+    active?: boolean,
 }
 
 export type TrackingOwnerType = "TEACHER" | "BUSINESS_OWNER";

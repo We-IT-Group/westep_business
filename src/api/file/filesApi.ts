@@ -1,8 +1,8 @@
 import apiClient from "../apiClient.ts";
-import {AxiosError} from "axios";
+import {parseApiError} from "../../utils/apiError.ts";
 
 
-export const addFile = async (body: any) => {
+export const addFile = async (body: FormData) => {
     try {
         const {data} = await apiClient.post("/attachments/upload", body, {
             headers: {
@@ -11,9 +11,7 @@ export const addFile = async (body: any) => {
         });
         return data;
     } catch (error) {
-        const err = error as AxiosError<{ message: string }>;
-        const message = err.response?.data?.message;
-        throw new Error(message);
+        throw parseApiError(error, "Fayl yuklab bo'lmadi.");
     }
 };
 
@@ -22,9 +20,7 @@ export const deleteFile = async (id: string) => {
     try {
         await apiClient.delete("/attachments/" + id);
     } catch (error) {
-        const err = error as AxiosError<{ message: string }>;
-        const message = err.response?.data?.message;
-        throw new Error(message);
+        throw parseApiError(error, "Faylni o'chirib bo'lmadi.");
     }
 };
 
@@ -35,8 +31,6 @@ export const getFileById = async (id: string | undefined) => {
         });
         return data;
     } catch (error) {
-        const err = error as AxiosError<{ message: string }>;
-        const message = err.response?.data?.message;
-        throw new Error(message);
+        throw parseApiError(error, "Fayl yuklanmadi.");
     }
 };

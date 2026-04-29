@@ -73,14 +73,12 @@ export const useAddCourse = () => {
 };
 
 export const useUpdateCourse = () => {
-    const navigate = useNavigate();
     const qc = useQueryClient();
     return useMutation({
         mutationFn: updateCourse,
         onSuccess: async (_data, variables) => {
             await qc.invalidateQueries({queryKey: coursesKey});
             await qc.invalidateQueries({queryKey: courseDetailKey(variables.id)});
-            navigate(0);
         },
         onError: (error) => {
             showErrorToast(error, "Kursni yangilab bo'lmadi");
@@ -163,7 +161,7 @@ export const usePatchCourseActive = () => {
 
             if (variables.value) {
                 showErrorToast(
-                    new ApiRequestError("Kurs active qilish uchun published bo'lishi va kamida bitta active darsi bo'lishi kerak."),
+                    new ApiRequestError("Kurs active qilish uchun kamida bitta active darsi bo'lishi kerak."),
                     "Kursni active qilib bo'lmadi",
                 );
                 return;
