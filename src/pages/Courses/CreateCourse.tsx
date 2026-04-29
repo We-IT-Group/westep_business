@@ -70,11 +70,11 @@ export default function CreateCourse() {
         },
         validationSchema: Yup.object({
             name: Yup.string().trim().required("Kurs nomini kiriting"),
-            primaryCategoryId: Yup.string().required("Kategoriya tanlang"),
-            subcategoryId: Yup.string().required("Subkategoriya tanlang"),
+            // primaryCategoryId: Yup.string().required("Kategoriya tanlang"),
+            // subcategoryId: Yup.string().required("Subkategoriya tanlang"),
             description: Yup.string().trim().required("Qisqa tavsif kiriting").max(500, "Qisqa tavsif juda uzun"),
             fullDescription: Yup.string().max(5000, "To‘liq tavsif juda uzun"),
-            languageId: Yup.string().required("Kurs tilini tanlang"),
+            // languageId: Yup.string().required("Kurs tilini tanlang"),
             trailerVideoUrl: Yup.string().test("youtube-url", "Faqat YouTube link qabul qilinadi", isYoutubeUrl),
         }),
         onSubmit: async () => {

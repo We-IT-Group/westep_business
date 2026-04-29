@@ -2,6 +2,7 @@ import {useState} from "react";
 import {Trash2, Play, FileText, Edit3} from "lucide-react";
 import {Lesson} from "../../types/types.ts";
 import {useDeleteLesson, useUpdateLesson} from "../../api/lessons/useLesson.ts";
+import {getVideoByLessonId} from "../../api/vedio/vedioApi.ts";
 import DeleteModal from "../common/DeleteModal.tsx";
 import {Switch} from "../ui/switch.tsx";
 import {showErrorToast, showSuccessToast} from "../../utils/toast.tsx";
@@ -18,6 +19,12 @@ interface LessonCardProps {
     };
 }
 
+type LessonVideoMeta = Lesson & {
+    videoCount?: number | string;
+    vedioCount?: number | string;
+    vedioUrl?: string;
+};
+
 const createLessonUpdateBody = (lesson: Lesson, patch: Partial<Lesson>): Lesson => {
     const body: Lesson = {
         ...lesson,
@@ -31,6 +38,28 @@ const createLessonUpdateBody = (lesson: Lesson, patch: Partial<Lesson>): Lesson 
     }
 
     return body;
+};
+
+const getLessonVideoCount = (lesson: Lesson) => {
+    const lessonWithVideoMeta = lesson as LessonVideoMeta;
+    const videoCount = lessonWithVideoMeta.videoCount ?? lessonWithVideoMeta.vedioCount;
+
+    if (typeof videoCount === "number") {
+        return videoCount;
+    }
+
+    if (typeof videoCount === "string" && videoCount.trim() !== "") {
+        const parsedVideoCount = Number(videoCount);
+        return Number.isNaN(parsedVideoCount) ? null : parsedVideoCount;
+    }
+
+    return null;
+};
+
+const hasDirectLessonVideo = (lesson: Lesson) => {
+    const lessonWithVideoMeta = lesson as LessonVideoMeta;
+
+    return Boolean(lesson.videoUrl?.trim() || lessonWithVideoMeta.vedioUrl?.trim());
 };
 
 function LessonCard({lesson, courseId, onSelect, activeSession}: LessonCardProps) {
@@ -73,6 +102,31 @@ function LessonCard({lesson, courseId, onSelect, activeSession}: LessonCardProps
 
     const handleActiveToggle = async (checked: boolean) => {
         try {
+            if (checked && !isPractice) {
+                const videoCount = getLessonVideoCount(lesson);
+                const hasDirectVideo = hasDirectLessonVideo(lesson);
+
+                if (!hasDirectVideo && videoCount === 0) {
+                    showErrorToast(
+                        new Error("Bu lessonni active qilish uchun kamida bitta video dars bo'lishi kerak."),
+                        "Lessonni active qilib bo'lmadi",
+                    );
+                    return;
+                }
+
+                if (!hasDirectVideo && videoCount === null) {
+                    const lessonVideos = await getVideoByLessonId(lesson.id).catch(() => []);
+
+                    if (!Array.isArray(lessonVideos) || lessonVideos.length === 0) {
+                        showErrorToast(
+                            new Error("Bu lessonni active qilish uchun kamida bitta video dars bo'lishi kerak."),
+                            "Lessonni active qilib bo'lmadi",
+                        );
+                        return;
+                    }
+                }
+            }
+
             await updateLesson({
                 body: createLessonUpdateBody(lesson, {active: checked}),
             });

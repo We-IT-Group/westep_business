@@ -1,8 +1,9 @@
 import axios from "axios";
-import { getItem, removeItem, setItem } from "../utils/utils.ts";
+import {getItem, removeItem, setItem} from "../utils/utils.ts";
 
 const normalizeUrl = (value: string) => value.trim().replace(/\/+$/, "");
 const defaultDevApiUrl = "http://localhost:8080/api";
+// const defaultDevApiUrl = "http://192.168.1.188:8080/api";
 const defaultProdApiUrl = "https://westep.uz/api";
 
 export const baseUrl = normalizeUrl(
@@ -37,8 +38,8 @@ apiClient.interceptors.response.use(
             if (!refreshToken) return Promise.reject(error);
 
             try {
-                const { data } = await axios.post(`${baseUrl}/auth/refresh`, {}, {
-                    params: { refreshToken: refreshToken },
+                const {data} = await axios.post(`${baseUrl}/auth/refresh`, {}, {
+                    params: {refreshToken: refreshToken},
                     withCredentials: true,
                 });
 
