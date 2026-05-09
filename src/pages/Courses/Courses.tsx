@@ -10,6 +10,7 @@ import {useGetBusinessCourses, useGetInactiveBusinessCourses, useGetMyCourses} f
 import CourseCard from "../../components/courses/CourseCard.tsx";
 import {Course} from "../../types/types.ts";
 import {Input} from "../../components/ui/input.tsx";
+import {isCourseManagerRole, useUser} from "../../api/auth/useAuth.ts";
 
 type CourseSource = "my" | "business" | "inactive";
 type CourseFilter = "all" | "active" | "inactive";
@@ -21,13 +22,15 @@ const sourceOptions: Array<{ id: CourseSource; label: string; helper: string }> 
 ];
 
 export default function Courses() {
+    const {data: user} = useUser();
+    const canManageCourses = isCourseManagerRole(user?.roleName);
     const [source, setSource] = useState<CourseSource>("my");
     const [activeFilter, setActiveFilter] = useState<CourseFilter>("all");
     const [searchQuery, setSearchQuery] = useState("");
 
     const myResult = useGetMyCourses();
-    const businessResult = useGetBusinessCourses();
-    const inactiveResult = useGetInactiveBusinessCourses();
+    const businessResult = useGetBusinessCourses(canManageCourses);
+    const inactiveResult = useGetInactiveBusinessCourses(canManageCourses);
 
     const mergedPortfolio = useMemo(() => {
         const uniqueCourses = new Map<string, Course>();
@@ -83,13 +86,16 @@ export default function Courses() {
         })
     ), [activeFilter, courses, normalizedQuery]);
 
-    const sourceCounts = {
+    const sourceCounts: Record<CourseSource, number> = {
         my: myResult.data?.length || 0,
         business: businessResult.data?.length || 0,
         inactive: inactiveCourses.length,
     };
 
     const isLoading = myResult.isLoading || businessResult.isLoading || inactiveResult.isLoading;
+    const visibleSourceOptions = canManageCourses
+        ? sourceOptions
+        : sourceOptions.filter((option) => option.id === "my");
 
     return (
         <div className="mx-auto max-w-[1320px] space-y-4 pb-10">
@@ -106,20 +112,22 @@ export default function Courses() {
                             Kurslarni yaratish, tahrirlash va active holatini boshqarish.
                         </p>
                     </div>
-                    <Link
-                        to="/courses/create"
-                        className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 md:w-auto"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Yangi kurs
-                    </Link>
+                    {canManageCourses ? (
+                        <Link
+                            to="/courses/create"
+                            className="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700 md:w-auto"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Yangi kurs
+                        </Link>
+                    ) : null}
                 </div>
             </section>
 
             <section className="rounded-2xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-800 dark:bg-slate-950">
                 <div className="flex flex-col gap-3">
                     <div className="grid gap-2 md:grid-cols-3">
-                        {sourceOptions.map((option) => {
+                        {visibleSourceOptions.map((option) => {
                             const active = source === option.id;
                             const count = sourceCounts[option.id];
 
@@ -194,7 +202,7 @@ export default function Courses() {
             ) : filteredCourses.length > 0 ? (
                 <section className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
                     {filteredCourses.map((course) => (
-                        <CourseCard key={course.id} course={course} source={source}/>
+                        <CourseCard key={course.id} course={course} source={source} canManageCourse={canManageCourses}/>
                     ))}
                 </section>
             ) : (
@@ -208,13 +216,15 @@ export default function Courses() {
                             ? `"${searchQuery}" bo'yicha mos kurs topilmadi.`
                             : "Bu bo'limda hozircha kurs yo'q."}
                     </p>
-                    <Link
-                        to="/courses/create"
-                        className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
-                    >
-                        <Plus className="h-4 w-4" />
-                        Kurs yaratish
-                    </Link>
+                    {canManageCourses ? (
+                        <Link
+                            to="/courses/create"
+                            className="mt-5 inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-medium text-white hover:bg-blue-700"
+                        >
+                            <Plus className="h-4 w-4" />
+                            Kurs yaratish
+                        </Link>
+                    ) : null}
                 </section>
             )}
         </div>

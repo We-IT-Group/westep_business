@@ -6,6 +6,12 @@ type LessonDiscussionsResponse = {
     content?: unknown[];
     items?: unknown[];
     data?: unknown[];
+    page?: unknown;
+    size?: unknown;
+    totalElements?: unknown;
+    totalPages?: unknown;
+    last?: unknown;
+    first?: unknown;
 };
 
 type LessonTasksResponse = {
@@ -20,6 +26,18 @@ type QuizResultsResponse = {
     data?: unknown[];
 };
 
+type LessonReviewsResponse = {
+    content?: unknown[];
+    items?: unknown[];
+    data?: unknown[];
+    page?: unknown;
+    size?: unknown;
+    totalElements?: unknown;
+    totalPages?: unknown;
+    last?: unknown;
+    first?: unknown;
+};
+
 type ReplyPayload = {
     content: string;
 };
@@ -28,28 +46,66 @@ type DiscussionUpdatePayload = {
     content: string;
 };
 
-export type ReviewSubmissionPayload = {
+export type CreateDiscussionRequest = {
+    content: string;
+};
+
+export type UpdateDiscussionRequest = {
+    content: string;
+};
+
+export type LessonHomeworkReviewRequest = {
     score: number;
     feedback: string;
     revisionRequested: boolean;
 };
 
-export type DiscussionReply = {
-    id: string;
-    content: string;
-    author: string;
-    studentId?: string;
-    createdAt: string;
+export type ReviewSubmissionPayload = LessonHomeworkReviewRequest;
+
+export type DiscussionAuthorDto = {
+    id?: string;
+    fullName?: string;
+    roleName?: string;
 };
 
-export type DiscussionThread = {
+export type DiscussionReplyDto = {
     id: string;
     content: string;
     author: string;
+    authorDto?: DiscussionAuthorDto;
+    lessonId?: string;
+    lessonName?: string;
     studentId?: string;
+    authorId?: string;
     createdAt: string;
-    replies: DiscussionReply[];
+    deleted?: boolean;
 };
+
+export type DiscussionCommentDto = {
+    id: string;
+    content: string;
+    author: string;
+    authorDto?: DiscussionAuthorDto;
+    lessonId?: string;
+    lessonName?: string;
+    studentId?: string;
+    authorId?: string;
+    createdAt: string;
+    deleted?: boolean;
+    replies: DiscussionReplyDto[];
+};
+
+export type DiscussionListResponse = {
+    content: DiscussionCommentDto[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+    first: boolean;
+    last: boolean;
+};
+
+export type DiscussionThread = DiscussionCommentDto;
 
 export type LessonTaskReview = {
     id: string;
@@ -57,7 +113,14 @@ export type LessonTaskReview = {
     type: string;
 };
 
-export type HomeworkSubmissionReview = {
+export type StudentHomeworkSubmitRequest = {
+    comment?: string;
+    link?: string;
+    files?: File[];
+    file?: File | null;
+};
+
+export type LessonHomeworkSubmissionResponse = {
     submissionId: string;
     taskId: string;
     lessonId: string;
@@ -71,8 +134,11 @@ export type HomeworkSubmissionReview = {
     feedback?: string;
     submittedAt?: string;
     reviewedAt?: string;
+    revisionRequested?: boolean;
     attachmentIds: string[];
 };
+
+export type HomeworkSubmissionReview = LessonHomeworkSubmissionResponse;
 
 export type QuizResultSummary = {
     sessionId: string;
@@ -112,6 +178,53 @@ export type QuizSessionDetail = {
     questions: QuizQuestionDetail[];
 };
 
+export type LessonQuizManagerResultSummaryResponse = QuizResultSummary;
+
+export type LessonQuizQuestionAnswerDetail = QuizQuestionDetail;
+
+export type LessonQuizManagerResultDetailResponse = {
+    summary?: LessonQuizManagerResultSummaryResponse;
+    questions: LessonQuizQuestionAnswerDetail[];
+};
+
+export type CourseQuizManagerStudentResponse = {
+    studentId: string;
+    studentName: string;
+    attempts: LessonQuizManagerResultSummaryResponse[];
+};
+
+export type CourseQuizManagerResultResponse = {
+    courseId: string;
+    courseName: string;
+    students: CourseQuizManagerStudentResponse[];
+};
+
+export type LessonReviewRequest = {
+    comment: string;
+};
+
+export type LessonReviewResponse = {
+    id: string;
+    comment: string;
+    createdAt: string;
+    updatedAt?: string;
+    deleted?: boolean;
+    authorId?: string;
+    authorName: string;
+    roleName?: string;
+    mine?: boolean;
+};
+
+export type LessonReviewListResponse = {
+    content: LessonReviewResponse[];
+    page: number;
+    size: number;
+    totalElements: number;
+    totalPages: number;
+    first: boolean;
+    last: boolean;
+};
+
 const asRecord = (value: unknown): Record<string, unknown> | null =>
     value && typeof value === "object" ? value as Record<string, unknown> : null;
 
@@ -132,6 +245,15 @@ const asNumber = (value: unknown) => {
     return undefined;
 };
 
+const asBoolean = (value: unknown) => {
+    if (typeof value === "boolean") return value;
+    if (typeof value === "string") {
+        if (value.toLowerCase() === "true") return true;
+        if (value.toLowerCase() === "false") return false;
+    }
+    return undefined;
+};
+
 const extractArray = (value: unknown) => {
     if (Array.isArray(value)) return value;
     const record = asRecord(value);
@@ -140,25 +262,60 @@ const extractArray = (value: unknown) => {
     return Array.isArray(nested) ? nested : [];
 };
 
-const normalizeDiscussionReply = (item: unknown, index: number): DiscussionReply => {
+const normalizePageMeta = (value: unknown, fallbackSize: number) => {
+    const record = asRecord(value) || {};
+    return {
+        page: asNumber(record.page) ?? asNumber(record.number) ?? 0,
+        size: asNumber(record.size) ?? fallbackSize,
+        totalElements: asNumber(record.totalElements) ?? extractArray(value).length,
+        totalPages: asNumber(record.totalPages) ?? 1,
+        first: asBoolean(record.first) ?? true,
+        last: asBoolean(record.last) ?? true,
+    };
+};
+
+const normalizeDiscussionAuthor = (value: unknown): DiscussionAuthorDto | undefined => {
+    const record = asRecord(value);
+    if (!record) return undefined;
+
+    return {
+        id: asOptionalString(record.id || record.authorId || record.userId),
+        fullName: asOptionalString(record.fullName || record.authorName || record.name),
+        roleName: asOptionalString(record.roleName || record.role),
+    };
+};
+
+const normalizeDiscussionReply = (item: unknown, index: number): DiscussionReplyDto => {
     const record = asRecord(item) || {};
+    const authorDto = normalizeDiscussionAuthor(record.author || record.authorDto || record.user);
     return {
         id: asOptionalString(record.id) || `reply-${index}`,
         content: asString(record.content || record.message || record.reply || ""),
-        author: asString(record.author || record.authorName || record.createdBy || "Unknown"),
+        author: asString(authorDto?.fullName || record.author || record.authorName || record.createdBy || "Unknown"),
+        authorDto,
+        lessonId: asOptionalString(record.lessonId),
+        lessonName: asOptionalString(record.lessonName),
         studentId: asOptionalString(record.studentId || record.authorId || record.createdById),
+        authorId: asOptionalString(record.authorId || record.createdById || authorDto?.id),
         createdAt: asString(record.createdAt || record.repliedAt || ""),
+        deleted: asBoolean(record.deleted) ?? false,
     };
 };
 
 const normalizeDiscussionThread = (item: unknown, index: number): DiscussionThread => {
     const record = asRecord(item) || {};
+    const authorDto = normalizeDiscussionAuthor(record.author || record.authorDto || record.user);
     return {
         id: asOptionalString(record.id || record.commentId) || `comment-${index}`,
         content: asString(record.content || record.comment || record.message || ""),
-        author: asString(record.author || record.authorName || record.createdBy || "Unknown"),
+        author: asString(authorDto?.fullName || record.author || record.authorName || record.createdBy || "Unknown"),
+        authorDto,
+        lessonId: asOptionalString(record.lessonId),
+        lessonName: asOptionalString(record.lessonName),
         studentId: asOptionalString(record.studentId || record.authorId || record.createdById),
+        authorId: asOptionalString(record.authorId || record.createdById || authorDto?.id),
         createdAt: asString(record.createdAt || ""),
+        deleted: asBoolean(record.deleted) ?? false,
         replies: extractArray(record.replies).map(normalizeDiscussionReply),
     };
 };
@@ -193,6 +350,7 @@ const normalizeHomeworkSubmission = (item: unknown, index: number): HomeworkSubm
         feedback: asOptionalString(record.feedback),
         submittedAt: asOptionalString(record.submittedAt),
         reviewedAt: asOptionalString(record.reviewedAt),
+        revisionRequested: asBoolean(record.revisionRequested),
         attachmentIds,
     };
 };
@@ -243,12 +401,90 @@ const normalizeQuizSessionDetail = (data: unknown): QuizSessionDetail => {
     return {summary, questions};
 };
 
-export const getLessonDiscussions = async (lessonId: string) => {
+const normalizeCourseQuizManagerStudent = (item: unknown, index: number): CourseQuizManagerStudentResponse => {
+    const record = asRecord(item) || {};
+    return {
+        studentId: asString(record.studentId || ""),
+        studentName: asString(record.studentName || `Student ${index + 1}`),
+        attempts: extractArray(record.attempts).map(normalizeQuizResultSummary),
+    };
+};
+
+const normalizeCourseQuizManagerResults = (data: unknown): CourseQuizManagerResultResponse => {
+    const record = asRecord(data) || {};
+    return {
+        courseId: asString(record.courseId || ""),
+        courseName: asString(record.courseName || ""),
+        students: extractArray(record.students).map(normalizeCourseQuizManagerStudent),
+    };
+};
+
+const normalizeDiscussionListResponse = (data: unknown, fallbackSize: number): DiscussionListResponse => {
+    const pageMeta = normalizePageMeta(data, fallbackSize);
+    return {
+        ...pageMeta,
+        content: extractArray(data as LessonDiscussionsResponse).map(normalizeDiscussionThread),
+    };
+};
+
+const normalizeLessonReview = (item: unknown, index: number): LessonReviewResponse => {
+    const record = asRecord(item) || {};
+    const authorDto = normalizeDiscussionAuthor(record.author || record.authorDto || record.user);
+
+    return {
+        id: asOptionalString(record.id) || `review-${index}`,
+        comment: asString(record.comment || record.content || ""),
+        createdAt: asString(record.createdAt || ""),
+        updatedAt: asOptionalString(record.updatedAt),
+        deleted: asBoolean(record.deleted) ?? false,
+        authorId: asOptionalString(record.authorId || authorDto?.id),
+        authorName: asString(authorDto?.fullName || record.authorName || record.author || "Unknown"),
+        roleName: asOptionalString(record.roleName || authorDto?.roleName),
+        mine: asBoolean(record.mine),
+    };
+};
+
+const normalizeLessonReviewListResponse = (data: unknown, fallbackSize: number): LessonReviewListResponse => {
+    const pageMeta = normalizePageMeta(data, fallbackSize);
+    return {
+        ...pageMeta,
+        content: extractArray(data as LessonReviewsResponse).map(normalizeLessonReview),
+    };
+};
+
+export const getLessonDiscussionsPage = async (lessonId: string, page = 0, size = 20) => {
     try {
-        const {data} = await apiClient.get(`/lessons/${lessonId}/discussions`);
-        return extractArray(data as LessonDiscussionsResponse).map(normalizeDiscussionThread);
+        const {data} = await apiClient.get(`/lessons/${lessonId}/discussions`, {
+            params: {page, size},
+        });
+        return normalizeDiscussionListResponse(data, size);
     } catch (error) {
         throw parseApiError(error, "Discussion yuklanmadi.");
+    }
+};
+
+export const getCourseDiscussionsPage = async (courseId: string, page = 0, size = 20) => {
+    try {
+        const {data} = await apiClient.get(`/courses/${courseId}/discussions`, {
+            params: {page, size},
+        });
+        return normalizeDiscussionListResponse(data, size);
+    } catch (error) {
+        throw parseApiError(error, "Course discussionlar yuklanmadi.");
+    }
+};
+
+export const getLessonDiscussions = async (lessonId: string) => {
+    const response = await getLessonDiscussionsPage(lessonId);
+    return response.content;
+};
+
+export const createLessonDiscussion = async (lessonId: string, body: CreateDiscussionRequest) => {
+    try {
+        const {data} = await apiClient.post(`/lessons/${lessonId}/discussions`, body);
+        return data;
+    } catch (error) {
+        throw parseApiError(error, "Discussion yuborilmadi.");
     }
 };
 
@@ -306,6 +542,85 @@ export const reviewHomeworkSubmission = async (submissionId: string, body: Revie
     }
 };
 
+export const submitHomework = async (taskId: string, body: StudentHomeworkSubmitRequest) => {
+    try {
+        const formData = new FormData();
+
+        const comment = body.comment?.trim();
+        const link = body.link?.trim();
+        const files = body.files?.length ? body.files : body.file ? [body.file] : [];
+
+        if (comment) {
+            formData.append("comment", comment);
+        }
+
+        if (link) {
+            formData.append("link", link);
+        }
+
+        files.forEach((file) => {
+            formData.append("file", file);
+            formData.append("files", file);
+        });
+
+        const {data} = await apiClient.post(`/lesson-homework/tasks/${taskId}/submit`, formData, {
+            headers: {
+                "Content-Type": "multipart/form-data",
+            },
+        });
+        return data;
+    } catch (error) {
+        throw parseApiError(error, "Homework yuborilmadi.");
+    }
+};
+
+export const getMyHomeworkSubmissions = async () => {
+    try {
+        const {data} = await apiClient.get("/lesson-homework/my-submissions");
+        return extractArray(data).map(normalizeHomeworkSubmission);
+    } catch (error) {
+        throw parseApiError(error, "Mening homework submissionlarim yuklanmadi.");
+    }
+};
+
+export const getMyHomeworkSubmissionsByLesson = async (lessonId: string) => {
+    try {
+        const {data} = await apiClient.get(`/lesson-homework/my-submissions/lesson/${lessonId}`);
+        return extractArray(data).map(normalizeHomeworkSubmission);
+    } catch (error) {
+        throw parseApiError(error, "Lesson bo‘yicha homework submissionlar yuklanmadi.");
+    }
+};
+
+export const getLessonReviewsPage = async (lessonId: string, page = 0, size = 10) => {
+    try {
+        const {data} = await apiClient.get(`/lessons/${lessonId}/reviews`, {
+            params: {page, size},
+        });
+        return normalizeLessonReviewListResponse(data, size);
+    } catch (error) {
+        throw parseApiError(error, "Lesson reviewlar yuklanmadi.");
+    }
+};
+
+export const createLessonReview = async (lessonId: string, body: LessonReviewRequest) => {
+    try {
+        const {data} = await apiClient.post(`/lessons/${lessonId}/reviews`, body);
+        return data;
+    } catch (error) {
+        throw parseApiError(error, "Lesson review yuborilmadi.");
+    }
+};
+
+export const updateMyLessonReview = async (lessonId: string, body: LessonReviewRequest) => {
+    try {
+        const {data} = await apiClient.patch(`/lessons/${lessonId}/reviews/my`, body);
+        return data;
+    } catch (error) {
+        throw parseApiError(error, "Lesson review yangilanmadi.");
+    }
+};
+
 export const getQuizResultsByTask = async (taskId: string) => {
     try {
         const {data} = await apiClient.get(`/lesson-tasks/quiz-results/manage/task/${taskId}`);
@@ -315,12 +630,71 @@ export const getQuizResultsByTask = async (taskId: string) => {
     }
 };
 
+export const getStudentQuizResults = async () => {
+    try {
+        const {data} = await apiClient.get("/lesson-tasks/quiz-results");
+        return extractArray(data as QuizResultsResponse).map(normalizeQuizResultSummary);
+    } catch (error) {
+        throw parseApiError(error, "Lesson quiz natijalari yuklanmadi.");
+    }
+};
+
+export const getStudentQuizResultsByLesson = async (lessonId: string) => {
+    try {
+        const {data} = await apiClient.get(`/lesson-tasks/quiz-results/lesson/${lessonId}`);
+        return extractArray(data as QuizResultsResponse).map(normalizeQuizResultSummary);
+    } catch (error) {
+        throw parseApiError(error, "Lesson bo‘yicha quiz natijalari yuklanmadi.");
+    }
+};
+
+export const getStudentQuizSessionDetail = async (sessionId: string) => {
+    try {
+        const {data} = await apiClient.get(`/lesson-tasks/quiz-results/${sessionId}`);
+        return normalizeQuizSessionDetail(data);
+    } catch (error) {
+        throw parseApiError(error, "Lesson quiz urinish detali yuklanmadi.");
+    }
+};
+
 export const getQuizResultsByLesson = async (lessonId: string) => {
     try {
         const {data} = await apiClient.get(`/lesson-tasks/quiz-results/manage/lesson/${lessonId}`);
         return extractArray(data as QuizResultsResponse).map(normalizeQuizResultSummary);
     } catch (error) {
         throw parseApiError(error, "Lesson quiz resultlar yuklanmadi.");
+    }
+};
+
+export const getQuizResultsByCourseLessons = async (lessonIds: string[]) => {
+    try {
+        const responses = await Promise.all(
+            lessonIds.map((lessonId) => apiClient.get(`/lesson-tasks/quiz-results/manage/lesson/${lessonId}`)),
+        );
+
+        return responses.flatMap(({data}) =>
+            extractArray(data as QuizResultsResponse).map(normalizeQuizResultSummary),
+        );
+    } catch (error) {
+        throw parseApiError(error, "Kurs bo‘yicha lesson quiz natijalari yuklanmadi.");
+    }
+};
+
+export const getCourseQuizResults = async (courseId: string) => {
+    try {
+        const {data} = await apiClient.get(`/courses/${courseId}/quiz-results/manage`);
+        return normalizeCourseQuizManagerResults(data);
+    } catch (error) {
+        throw parseApiError(error, "Kurs bo‘yicha lesson quiz natijalari yuklanmadi.");
+    }
+};
+
+export const getCourseQuizSessionDetail = async (courseId: string, sessionId: string) => {
+    try {
+        const {data} = await apiClient.get(`/courses/${courseId}/quiz-results/manage/${sessionId}`);
+        return normalizeQuizSessionDetail(data);
+    } catch (error) {
+        throw parseApiError(error, "Quiz session detail yuklanmadi.");
     }
 };
 

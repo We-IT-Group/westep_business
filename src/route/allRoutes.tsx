@@ -18,6 +18,7 @@ import AddUsers from "../pages/Users/AddUsers.tsx";
 import CourseDetails from "../pages/CourseDetails/CourseDetails.tsx";
 import AddLesson from "../components/courseDetails/lessonDetails/AddLesson.tsx";
 import ForgotPassword from "../pages/AuthPages/ForgotPassword.tsx";
+import HomeRedirect from "../pages/Dashboard/HomeRedirect.tsx";
 import Overview from "../pages/Dashboard/Overview.tsx";
 import Students from "../pages/Dashboard/Students.tsx";
 import Teachers from "../pages/Dashboard/Teachers.tsx";
@@ -28,7 +29,7 @@ import Settings from "../pages/Dashboard/Settings.tsx";
 import PublicTrackingRedirect from "../pages/PublicTrackingRedirect.tsx";
 
 export const authProtectedRoutes = [
-    {index: true, element: <Overview/>, path: "/"},
+    {index: true, element: <HomeRedirect/>, path: "/"},
     {path: "/dashboard", element: <Overview/>},
     {path: "/courses/update/:id", element: <AddCourse/>},
     {path: "/courses/create", element: <CreateCourse/>},

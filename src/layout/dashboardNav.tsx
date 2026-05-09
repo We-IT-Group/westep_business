@@ -1,5 +1,6 @@
 import type {ReactNode} from "react";
 import {LayoutDashboard, BookOpen, Users, BarChart3, Settings, MessageCircle} from "lucide-react";
+import {isCourseManagerRole, isLessonQuizManagerRole, isStudentRole} from "../api/auth/useAuth.ts";
 
 type DashboardNavIcon =
     | "overview"
@@ -20,7 +21,7 @@ export type DashboardNavItem = {
     description: string;
 };
 
-export const dashboardNavItems: DashboardNavItem[] = [
+const managerDashboardNavItems: DashboardNavItem[] = [
     {
         label: "Boshqaruv",
         path: "/",
@@ -59,13 +60,39 @@ export const dashboardNavItems: DashboardNavItem[] = [
     },
 ];
 
+export const getDashboardNavItems = (roleName?: string): DashboardNavItem[] => {
+    if (isStudentRole(roleName)) {
+        return [
+            {
+                label: "Kurslar",
+                path: "/courses",
+                icon: "courses",
+                description: "Ta'lim dasturlaringiz va test natijalaringiz.",
+            },
+        ];
+    }
+
+    if (isLessonQuizManagerRole(roleName) && !isCourseManagerRole(roleName)) {
+        return [
+            {
+                label: "Kurslar",
+                path: "/courses",
+                icon: "courses",
+                description: "Biriktirilgan kurslar va lesson quiz natijalari.",
+            },
+        ];
+    }
+
+    return managerDashboardNavItems;
+};
+
 type DashboardPageMeta = {
     title: string;
     description: string;
 };
 
 export const getDashboardPageMeta = (pathname: string): DashboardPageMeta => {
-    const directMatch = dashboardNavItems.find((item) => item.path === pathname);
+    const directMatch = managerDashboardNavItems.find((item) => item.path === pathname);
 
     if (directMatch) {
         return {

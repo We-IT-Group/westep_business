@@ -14,10 +14,31 @@ import {getItem, removeItem} from "../../utils/utils.ts";
 import {useToast} from "../../hooks/useToast.tsx";
 import {showErrorToast} from "../../utils/toast.tsx";
 
-export const isTeacherSideRole = (roleName?: string) => {
-    const normalized = (roleName || "").toUpperCase();
-    return normalized.includes("BUSINESS_ADMIN") || normalized.includes("TEACHER");
-};
+export const normalizeRoleName = (roleName?: string) => (roleName || "").toUpperCase();
+
+export const isBusinessAdminRole = (roleName?: string) =>
+    normalizeRoleName(roleName).includes("BUSINESS_ADMIN");
+
+export const isTeacherRole = (roleName?: string) =>
+    normalizeRoleName(roleName).includes("TEACHER");
+
+export const isAssistantRole = (roleName?: string) =>
+    normalizeRoleName(roleName).includes("ASSISTANT");
+
+export const isStudentRole = (roleName?: string) =>
+    normalizeRoleName(roleName).includes("STUDENT");
+
+export const isTeacherSideRole = (roleName?: string) =>
+    isBusinessAdminRole(roleName) || isTeacherRole(roleName);
+
+export const isCourseManagerRole = (roleName?: string) =>
+    isTeacherSideRole(roleName);
+
+export const isLessonQuizManagerRole = (roleName?: string) =>
+    isTeacherRole(roleName) || isBusinessAdminRole(roleName) || isAssistantRole(roleName);
+
+export const isWorkspaceUserRole = (roleName?: string) =>
+    isLessonQuizManagerRole(roleName) || isStudentRole(roleName);
 
 export const useUser = () =>
     useQuery({
@@ -43,15 +64,15 @@ export const useLogin = () => {
             try {
                 const user = await getCurrentUser();
 
-                if (!isTeacherSideRole(user?.roleName)) {
+                if (!isWorkspaceUserRole(user?.roleName)) {
                     removeItem("accessToken");
                     removeItem("refreshToken");
-                    toast.error("Bu panelga faqat Business Admin yoki Teacher kira oladi.");
+                    toast.error("Bu panelga ruxsat berilgan rol bilan kiring.");
                     navigate("/login", {replace: true});
                     return;
                 }
 
-                navigate("/", {replace: true});
+                navigate(isTeacherSideRole(user?.roleName) ? "/" : "/courses", {replace: true});
             } catch (error) {
                 removeItem("accessToken");
                 removeItem("refreshToken");

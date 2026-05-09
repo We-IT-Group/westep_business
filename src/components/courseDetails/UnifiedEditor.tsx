@@ -72,7 +72,11 @@ const PricingPlaceholder = () => (
     </div>
 );
 
-const UnifiedEditor: React.FC<UnifiedEditorProps> = ({session, courseName, onBack}) => {
+const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
+    session,
+    courseName,
+    onBack,
+}) => {
     const {id: courseId} = useParams<{ id: string }>();
 
     if (session.type === "none") {

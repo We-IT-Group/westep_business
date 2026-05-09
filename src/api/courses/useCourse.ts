@@ -14,7 +14,7 @@ const inactiveCoursesKey = [...coursesKey, "inactive"] as const;
 const courseDetailKey = (id: string | undefined) => [...coursesKey, "detail", id] as const;
 const courseListKeys = [myCoursesKey, businessCoursesKey, inactiveCoursesKey] as const;
 
-export const useGetMyCourses = () =>
+export const useGetMyCourses = (enabled = true) =>
     useQuery({
         queryKey: myCoursesKey,
         queryFn: async () => {
@@ -23,9 +23,10 @@ export const useGetMyCourses = () =>
             return await getMyCourses();
         },
         retry: false,
+        enabled,
     });
 
-export const useGetBusinessCourses = () =>
+export const useGetBusinessCourses = (enabled = true) =>
     useQuery({
         queryKey: businessCoursesKey,
         queryFn: async () => {
@@ -34,9 +35,10 @@ export const useGetBusinessCourses = () =>
             return await getBusinessCourses();
         },
         retry: false,
+        enabled,
     });
 
-export const useGetInactiveBusinessCourses = () =>
+export const useGetInactiveBusinessCourses = (enabled = true) =>
     useQuery({
         queryKey: inactiveCoursesKey,
         queryFn: async () => {
@@ -45,6 +47,7 @@ export const useGetInactiveBusinessCourses = () =>
             return await getInactiveBusinessCourses();
         },
         retry: false,
+        enabled,
     });
 
 export const useGetCourseById = (id: string | undefined) =>

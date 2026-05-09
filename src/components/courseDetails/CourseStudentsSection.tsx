@@ -39,7 +39,11 @@ type StudentCreateForm = {
     lastName: string;
 };
 
-export default function CourseStudentsSection({courseId}: {courseId: string}) {
+export default function CourseStudentsSection({
+    courseId,
+}: {
+    courseId: string;
+}) {
     const toast = useToast();
     const {mutateAsync: createStudent, isPending: isCreatingStudent} = useCreateBusinessStudent();
     const {data: students = [], isLoading: isStudentsLoading, isError, error} = useCourseStudents(courseId);

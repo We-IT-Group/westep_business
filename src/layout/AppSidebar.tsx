@@ -1,12 +1,15 @@
 import {Link, useLocation} from "react-router-dom";
 import logo from "../assets/westep_dark_logo.png";
 import {useSidebar} from "../context/SidebarContext";
-import {dashboardNavItems, renderDashboardIcon} from "./dashboardNav";
+import {getDashboardNavItems, renderDashboardIcon} from "./dashboardNav";
 import {ChevronLeft, ChevronRight, LogOut} from "lucide-react";
+import {useUser} from "../api/auth/useAuth.ts";
 
 const AppSidebar: React.FC = () => {
     const {isExpanded, isMobileOpen, toggleMobileSidebar, toggleSidebar} = useSidebar();
     const location = useLocation();
+    const {data: user} = useUser();
+    const dashboardNavItems = getDashboardNavItems(user?.roleName);
 
     return (
         <aside

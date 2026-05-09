@@ -15,7 +15,15 @@ import {showSuccessToast} from "../../utils/toast.tsx";
 
 type CourseSource = "my" | "business" | "inactive";
 
-function CourseCard({course, source = "my"}: { course: Course; source?: CourseSource }) {
+function CourseCard({
+    course,
+    source = "my",
+    canManageCourse = true,
+}: {
+    course: Course;
+    source?: CourseSource;
+    canManageCourse?: boolean;
+}) {
     const navigate = useNavigate();
     const {mutateAsync: patchActive, isPending: isPatchPending} = usePatchCourseActive();
     const [imageFailed, setImageFailed] = useState(false);
@@ -70,22 +78,24 @@ function CourseCard({course, source = "my"}: { course: Course; source?: CourseSo
                                 </p>
                             </div>
 
-                            <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                    <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900">
-                                        <MoreVertical className="h-4 w-4" />
-                                    </button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end" className="w-52 rounded-xl border-slate-200 p-1.5 dark:border-slate-800">
-                                    <DropdownMenuItem
-                                        onClick={() => navigate(`/courses/edit/${course.id}`)}
-                                        className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200"
-                                    >
-                                        <Edit2 className="mr-2 h-4 w-4 text-blue-600" />
-                                        Kursni tahrirlash
-                                    </DropdownMenuItem>
-                                </DropdownMenuContent>
-                            </DropdownMenu>
+                            {canManageCourse ? (
+                                <DropdownMenu>
+                                    <DropdownMenuTrigger asChild>
+                                        <button className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 dark:border-slate-800 dark:bg-slate-950 dark:text-slate-300 dark:hover:bg-slate-900">
+                                            <MoreVertical className="h-4 w-4" />
+                                        </button>
+                                    </DropdownMenuTrigger>
+                                    <DropdownMenuContent align="end" className="w-52 rounded-xl border-slate-200 p-1.5 dark:border-slate-800">
+                                        <DropdownMenuItem
+                                            onClick={() => navigate(`/courses/edit/${course.id}`)}
+                                            className="rounded-lg px-3 py-2 text-sm font-medium text-slate-700 dark:text-slate-200"
+                                        >
+                                            <Edit2 className="mr-2 h-4 w-4 text-blue-600" />
+                                            Kursni tahrirlash
+                                        </DropdownMenuItem>
+                                    </DropdownMenuContent>
+                                </DropdownMenu>
+                            ) : null}
                         </div>
 
                     </div>
@@ -96,14 +106,24 @@ function CourseCard({course, source = "my"}: { course: Course; source?: CourseSo
                         <div>
                             <p className="text-sm font-medium text-slate-900 dark:text-slate-100">Studentlarga ko‘rinishi</p>
                             <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
-                                Switch yoqilsa kurs ko‘rinadi.
+                                {canManageCourse ? "Switch yoqilsa kurs ko‘rinadi." : (course.active ? "Kurs hozir studentlarga ko‘rinadi." : "Kurs hozir studentlarga yopiq.")}
                             </p>
                         </div>
-                        <Switch
-                            checked={course.active}
-                            onCheckedChange={handleToggleActive}
-                            disabled={isPatchPending}
-                        />
+                        {canManageCourse ? (
+                            <Switch
+                                checked={course.active}
+                                onCheckedChange={handleToggleActive}
+                                disabled={isPatchPending}
+                            />
+                        ) : (
+                            <span className={`rounded-full px-3 py-1 text-xs font-semibold ${
+                                course.active
+                                    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300"
+                                    : "bg-slate-200 text-slate-600 dark:bg-slate-800 dark:text-slate-300"
+                            }`}>
+                                {course.active ? "Active" : "Nofaol"}
+                            </span>
+                        )}
                     </div>
                 </div>
 
