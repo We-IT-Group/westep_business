@@ -1,5 +1,5 @@
 import {useEffect, useMemo, useState} from "react";
-import {useNavigate, useParams} from "react-router-dom";
+import {useNavigate, useParams, useSearchParams} from "react-router-dom";
 import {
     ArrowLeft,
     BarChart3,
@@ -16,6 +16,7 @@ import CourseModulesBar from "../../components/courseDetails/CourseModulesBar.ts
 import UnifiedEditor from "../../components/courseDetails/UnifiedEditor.tsx";
 import {useGetModules} from "../../api/module/useModule.ts";
 import {isCourseManagerRole, useUser} from "../../api/auth/useAuth.ts";
+import {useCourseDiscussionUnreadCount} from "../../api/discussionInbox/useDiscussionInbox.ts";
 
 type SessionType =
     | "lesson"
@@ -93,9 +94,11 @@ const getSessionMeta = (type: SessionType) => {
 const CourseDetails = () => {
     const navigate = useNavigate();
     const params = useParams<{ id: string; lessonId?: string }>();
+    const [searchParams, setSearchParams] = useSearchParams();
     const courseId = params.id;
     const {data: user} = useUser();
     const canManageCourse = isCourseManagerRole(user?.roleName);
+    const {data: unreadDiscussionCount = 0} = useCourseDiscussionUnreadCount(courseId, canManageCourse);
 
     const {data: course, isLoading: isCourseLoading} = useGetCourseById(courseId);
     const {data: modules = []} = useGetModules(courseId);
@@ -106,6 +109,7 @@ const CourseDetails = () => {
         id: canManageCourse ? null : courseId || null,
         moduleId: null,
     });
+    const focusedStudentId = searchParams.get("studentId");
 
     useEffect(() => {
         if (!canManageCourse) {
@@ -117,6 +121,20 @@ const CourseDetails = () => {
         if (!params.lessonId) return;
         setActiveSession((prev) => ({type: "lesson", id: params.lessonId ?? null, moduleId: prev.moduleId ?? null}));
     }, [params.lessonId]);
+
+    useEffect(() => {
+        const requestedView = searchParams.get("view");
+        if (!requestedView || !courseId) return;
+
+        const allowedViews: SessionType[] = ["students", "homework", "discussions", "quizzes", "analytics", "none"];
+        if (!allowedViews.includes(requestedView as SessionType)) return;
+
+        setActiveSession({
+            type: requestedView as SessionType,
+            id: courseId,
+            moduleId: null,
+        });
+    }, [courseId, searchParams]);
 
     const totalLessons = useMemo(
         () => modules.reduce((sum: number, module: {lessonCount?: number}) => sum + (module.lessonCount || 0), 0),
@@ -163,6 +181,13 @@ const CourseDetails = () => {
     };
 
     const handleWorkspaceAction = (type: SessionType) => {
+        setSearchParams((prev) => {
+            const next = new URLSearchParams(prev);
+            next.delete("studentId");
+            next.delete("view");
+            return next;
+        });
+
         if (type === "none") {
             setActiveSession({type: "none", id: null, moduleId: null});
             return;
@@ -242,7 +267,7 @@ const CourseDetails = () => {
                             <button
                                 key={action.id}
                                 onClick={() => handleWorkspaceAction(action.id)}
-                                className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition ${
+                                className={`relative inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-medium transition ${
                                     isActive
                                         ? "bg-blue-600 text-white"
                                         : "bg-slate-100 text-slate-600 hover:bg-slate-200 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"
@@ -250,6 +275,15 @@ const CourseDetails = () => {
                             >
                                 <action.icon className="h-4 w-4"/>
                                 {action.label}
+                                {action.id === "discussions" && unreadDiscussionCount > 0 ? (
+                                    <span className={`absolute -right-1.5 -top-1.5 inline-flex h-6 min-w-6 items-center justify-center rounded-full border px-1.5 text-[11px] font-bold shadow-sm ${
+                                        isActive
+                                            ? "border-white/70 bg-white text-blue-600"
+                                            : "border-blue-500/20 bg-blue-600 text-white dark:border-blue-400/30 dark:bg-blue-500"
+                                    }`}>
+                                        {unreadDiscussionCount > 99 ? "99+" : unreadDiscussionCount}
+                                    </span>
+                                ) : null}
                             </button>
                         );
                     })}
@@ -258,11 +292,12 @@ const CourseDetails = () => {
 
             {showLessonEditor ? (
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
-                    <UnifiedEditor
-                        session={activeSession}
-                        courseName={course?.name}
-                        onBack={handleLessonBack}
-                    />
+                            <UnifiedEditor
+                                session={activeSession}
+                                courseName={course?.name}
+                                focusedStudentId={focusedStudentId || undefined}
+                                onBack={handleLessonBack}
+                            />
                 </section>
             ) : (
                 <div className={`grid min-h-[760px] gap-4 ${
@@ -289,6 +324,7 @@ const CourseDetails = () => {
                             <UnifiedEditor
                                 session={activeSession}
                                 courseName={course?.name}
+                                focusedStudentId={focusedStudentId || undefined}
                             />
                         </section>
                     ) : null}

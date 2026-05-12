@@ -42,7 +42,6 @@ import type {DiscussionInboxThreadDetail, DiscussionInboxThreadListItem} from ".
 import {
     useCourseDiscussionInbox,
     useCourseDiscussionThreadDetails,
-    useCourseDiscussionUnreadCount,
     useReadCourseDiscussionThread,
     useReplyCourseDiscussionThread,
 } from "../../api/discussionInbox/useDiscussionInbox.ts";
@@ -128,7 +127,13 @@ function Pager({
     );
 }
 
-export default function DiscussionSection({courseId}: { courseId: string }) {
+export default function DiscussionSection({
+    courseId,
+    initialStudentId,
+}: {
+    courseId: string;
+    initialStudentId?: string;
+}) {
     const {data: user} = useUser();
     const {data: modules, isLoading: isModulesLoading} = useGetModules(courseId);
     const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -151,6 +156,7 @@ export default function DiscussionSection({courseId}: { courseId: string }) {
             {canModerate && !isStudent ? (
                 <CourseDiscussionManagerPanel
                     courseId={courseId}
+                    initialStudentId={initialStudentId}
                     currentUserName={`${user?.firstname || ""} ${user?.lastname || ""}`.trim() || "Teacher"}
                 />
             ) : null}
@@ -225,9 +231,11 @@ export default function DiscussionSection({courseId}: { courseId: string }) {
 
 function CourseDiscussionManagerPanel({
     courseId,
+    initialStudentId,
     currentUserName,
 }: {
     courseId: string;
+    initialStudentId?: string;
     currentUserName: string;
 }) {
     const [page, setPage] = useState(0);
@@ -236,7 +244,6 @@ function CourseDiscussionManagerPanel({
     const [replyDraft, setReplyDraft] = useState("");
     const [statusFilter, setStatusFilter] = useState<"all" | "unread" | "read">("all");
     const inboxQuery = useCourseDiscussionInbox(courseId, page, DISCUSSION_PAGE_SIZE);
-    const unreadCountQuery = useCourseDiscussionUnreadCount(courseId);
     const replyMutation = useReplyCourseDiscussionThread(courseId, page, DISCUSSION_PAGE_SIZE);
     const readMutation = useReadCourseDiscussionThread(courseId, page, DISCUSSION_PAGE_SIZE);
     const groupedConversations = useMemo(() => {
@@ -305,6 +312,16 @@ function CourseDiscussionManagerPanel({
 
         return groupedConversations;
     }, [groupedConversations, statusFilter]);
+
+    useEffect(() => {
+        if (!initialStudentId || selectedConversationKey || !groupedConversations.length) return;
+
+        const matchingConversation = groupedConversations.find((conversation) => conversation.student.id === initialStudentId);
+        if (matchingConversation) {
+            setSelectedConversationKey(matchingConversation.key);
+        }
+    }, [groupedConversations, initialStudentId, selectedConversationKey]);
+
     const replyTarget = useMemo(
         () => selectedConversation?.items.find((item) => item.threadId === replyTargetThreadId) || null,
         [replyTargetThreadId, selectedConversation],
@@ -359,9 +376,6 @@ function CourseDiscussionManagerPanel({
         setReplyDraft("");
     };
 
-    const totalThreads = inboxQuery.data?.totalThreads ?? 0;
-    const unreadCount = unreadCountQuery.data ?? inboxQuery.data?.unreadCount ?? 0;
-
     return (
         <div className="space-y-6">
             {inboxQuery.isLoading ? (
@@ -408,8 +422,6 @@ function CourseDiscussionManagerPanel({
             ) : (
                 <DiscussionInboxTable
                     threads={filteredConversations}
-                    totalThreads={totalThreads}
-                    unreadCount={unreadCount}
                     statusFilter={statusFilter}
                     onStatusFilterChange={setStatusFilter}
                     onSelect={handleThreadSelect}
@@ -432,8 +444,6 @@ function CourseDiscussionManagerPanel({
 
 function DiscussionInboxTable({
     threads,
-    totalThreads,
-    unreadCount,
     statusFilter,
     onStatusFilterChange,
     onSelect,
@@ -448,8 +458,6 @@ function DiscussionInboxTable({
         lastMessageAt?: string;
         items: DiscussionInboxThreadListItem[];
     }>;
-    totalThreads: number;
-    unreadCount: number;
     statusFilter: "all" | "unread" | "read";
     onStatusFilterChange: (value: "all" | "unread" | "read") => void;
     onSelect: (conversationKey: string) => void;
@@ -458,7 +466,7 @@ function DiscussionInboxTable({
         <div className="rounded-[26px] border border-slate-200 bg-slate-50/80 dark:border-slate-800 dark:bg-slate-900/60">
             <div className="overflow-x-auto">
                 <div className="min-w-[1100px] px-4 pb-6">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 px-2 py-4 dark:border-slate-800">
+                    <div className="border-b border-slate-200 px-2 py-4 dark:border-slate-800">
                         <div className="flex flex-wrap items-center gap-2">
                             <Button
                                 type="button"
@@ -488,12 +496,6 @@ function DiscussionInboxTable({
                                 O‘qilgan
                             </Button>
                         </div>
-                        <Badge className="rounded-full bg-slate-900 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-white dark:bg-slate-100 dark:text-slate-950">
-                            {totalThreads} thread
-                        </Badge>
-                        <Badge className="rounded-full bg-blue-50 px-3 py-1 text-[10px] font-black uppercase tracking-[0.2em] text-blue-700 dark:bg-blue-500/10 dark:text-blue-300">
-                            {unreadCount} o‘qilmagan
-                        </Badge>
                     </div>
                     <div className="grid grid-cols-[1.8fr_1.2fr_1.8fr_0.9fr_1fr] gap-4 px-2 py-5 text-sm font-semibold text-slate-700 dark:text-slate-200">
                         <div className="flex items-center gap-3">

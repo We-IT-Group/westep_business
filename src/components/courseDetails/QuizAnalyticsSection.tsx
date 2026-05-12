@@ -768,8 +768,10 @@ function StudentLessonResultsPanel({
 
 function ManagerLessonResultsPanel({
     courseId,
+    initialStudentId,
 }: {
     courseId: string;
+    initialStudentId?: string;
 }) {
     const resultsQuery = useCourseQuizResults(courseId);
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
@@ -784,6 +786,10 @@ function ManagerLessonResultsPanel({
                 })),
             ),
         [resultsQuery.data?.students],
+    );
+    const visibleResults = useMemo(
+        () => (initialStudentId ? allResults.filter((result) => result.studentId === initialStudentId) : allResults),
+        [allResults, initialStudentId],
     );
 
     return (
@@ -808,15 +814,15 @@ function ManagerLessonResultsPanel({
                     <LoadingState label="Lesson quiz manager natijalari yuklanmoqda..."/>
                 ) : resultsQuery.isError ? (
                     <ErrorState error={resultsQuery.error}/>
-                ) : !allResults.length ? (
+                ) : !visibleResults.length ? (
                     <EmptyState
                         title="Natijalar topilmadi"
-                        description="Bu kurs bo‘yicha ishlangan lesson testlar hali yo‘q."
+                        description={initialStudentId ? "Tanlangan student uchun lesson test natijalari topilmadi." : "Bu kurs bo‘yicha ishlangan lesson testlar hali yo‘q."}
                         icon={<BarChart3 className="h-7 w-7"/>}
                     />
                 ) : (
                     <LessonHistoryCardList
-                        results={allResults}
+                        results={visibleResults}
                         onSelect={setSelectedSessionId}
                     />
                 )
@@ -825,7 +831,13 @@ function ManagerLessonResultsPanel({
     );
 }
 
-export default function QuizAnalyticsSection({courseId}: {courseId: string}) {
+export default function QuizAnalyticsSection({
+    courseId,
+    initialStudentId,
+}: {
+    courseId: string;
+    initialStudentId?: string;
+}) {
     const {data: user} = useUser();
     const {data: modules, isLoading: isModulesLoading, isError: isModulesError, error: modulesError} = useGetModules(courseId);
     const lessons = useMemo(
@@ -907,7 +919,7 @@ export default function QuizAnalyticsSection({courseId}: {courseId: string}) {
                 </TabsContent>
 
                 <TabsContent value="manager-lesson-quizzes" className="mt-6">
-                    <ManagerLessonResultsPanel courseId={courseId}/>
+                    <ManagerLessonResultsPanel courseId={courseId} initialStudentId={initialStudentId}/>
                 </TabsContent>
             </Tabs>
         </div>

@@ -2,6 +2,7 @@ import {useMemo, useState} from "react";
 import {useFormik} from "formik";
 import * as Yup from "yup";
 import {Copy, LoaderCircle, Phone, Search, UserPlus} from "lucide-react";
+import {useNavigate} from "react-router-dom";
 import {useCourseStudents} from "../../api/courseStudents/useCourseStudents.ts";
 import {useToast} from "../../hooks/useToast.tsx";
 import {useCreateBusinessStudent} from "../../api/courseStudents/useBusinessStudents.ts";
@@ -10,16 +11,31 @@ import {Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle} fro
 import {Button} from "../ui/button.tsx";
 
 const formatDateTime = (value?: string) => {
-    if (!value) return "Faollik yo‘q";
+    if (!value) {
+        return {
+            date: "Faollik yo‘q",
+            time: "Hali qayd etilmagan",
+        };
+    }
 
     const date = new Date(value);
-    if (Number.isNaN(date.getTime())) return value;
+    if (Number.isNaN(date.getTime())) {
+        return {
+            date: value,
+            time: "Soat noma’lum",
+        };
+    }
 
     const day = String(date.getDate()).padStart(2, "0");
     const month = String(date.getMonth() + 1).padStart(2, "0");
     const year = date.getFullYear();
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
 
-    return `${day}.${month}.${year}`;
+    return {
+        date: `${day}.${month}.${year}`,
+        time: `${hours}:${minutes}`,
+    };
 };
 
 const getStudentInitial = (name: string) => {
@@ -44,6 +60,7 @@ export default function CourseStudentsSection({
 }: {
     courseId: string;
 }) {
+    const navigate = useNavigate();
     const toast = useToast();
     const {mutateAsync: createStudent, isPending: isCreatingStudent} = useCreateBusinessStudent();
     const {data: students = [], isLoading: isStudentsLoading, isError, error} = useCourseStudents(courseId);
@@ -115,6 +132,10 @@ export default function CourseStudentsSection({
         }
     };
 
+    const handleMetricNavigate = (studentId: string, view: "homework" | "quizzes" | "discussions") => {
+        navigate(`/courses/details/${courseId}?view=${view}&studentId=${studentId}`);
+    };
+
     return (
         <div className="min-h-[760px] rounded-[28px] border border-slate-200 bg-white text-slate-900 shadow-sm dark:border-slate-800 dark:bg-slate-950 dark:text-slate-100">
             <div className="border-b border-slate-200 px-7 py-6 dark:border-slate-800">
@@ -183,53 +204,76 @@ export default function CourseStudentsSection({
                                     O‘quvchilar topilmadi.
                                 </div>
                             ) : (
-                                filteredStudents.map((student) => (
-                                    <div
-                                        key={student.studentCourseId}
-                                        className="grid w-full grid-cols-[2.1fr_1fr_0.9fr_0.8fr_0.8fr_0.8fr_1.2fr] gap-4 rounded-2xl px-2 py-6 text-left transition hover:bg-white/70 dark:hover:bg-white/[0.03]"
-                                    >
-                                        <div className="flex items-center gap-4">
-                                            <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#46cf43] text-2xl font-semibold text-white">
-                                                {getStudentInitial(student.studentName)}
-                                                <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#48bf45] ring-2 ring-white dark:ring-slate-950" />
-                                            </div>
-                                            <div className="min-w-0">
-                                                <div className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{student.studentName}</div>
-                                                <div className="mt-1 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
-                                                    <Phone className="h-4 w-4" />
-                                                    {student.phone || "Telefon yo‘q"}
+                                filteredStudents.map((student) => {
+                                    const lastActivity = formatDateTime(student.lastActivityAt);
+
+                                    return (
+                                        <div
+                                            key={student.studentCourseId}
+                                            className="grid w-full grid-cols-[2.1fr_1fr_0.9fr_0.8fr_0.8fr_0.8fr_1.2fr] gap-4 rounded-2xl px-2 py-6 text-left transition hover:bg-white/70 dark:hover:bg-white/[0.03]"
+                                        >
+                                            <div className="flex items-center gap-4">
+                                                <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#46cf43] text-2xl font-semibold text-white">
+                                                    {getStudentInitial(student.studentName)}
+                                                    <span className="absolute bottom-0 right-0 h-3 w-3 rounded-full bg-[#48bf45] ring-2 ring-white dark:ring-slate-950" />
+                                                </div>
+                                                <div className="min-w-0">
+                                                    <div className="truncate text-base font-semibold text-slate-900 dark:text-slate-100">{student.studentName}</div>
+                                                    <div className="mt-1 flex items-center gap-2 text-sm text-slate-500 dark:text-slate-400">
+                                                        <Phone className="h-4 w-4" />
+                                                        {student.phone || "Telefon yo‘q"}
+                                                    </div>
                                                 </div>
                                             </div>
-                                        </div>
 
-                                        <div className="self-center">
-                                            <div className="text-base font-semibold text-slate-900 dark:text-slate-100">
-                                                {student.completedLessons}/{student.totalLessons}
+                                            <div className="self-center">
+                                                <div className="text-base font-semibold text-slate-900 dark:text-slate-100">
+                                                    {student.completedLessons}/{student.totalLessons}
+                                                </div>
+                                                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">Tugallangan darslar</div>
                                             </div>
-                                            <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">Tugallangan darslar</div>
-                                        </div>
 
-                                        <div className="self-center">
-                                            <div className="flex items-center gap-3">
-                                                <span className={`h-7 w-7 rounded-full ${getProgressTone(student.progressPercentage)}`} />
-                                                <span className="text-base font-semibold text-slate-900 dark:text-slate-100">{student.progressPercentage} %</span>
+                                            <div className="self-center">
+                                                <div className="flex items-center gap-3">
+                                                    <span className={`h-7 w-7 rounded-full ${getProgressTone(student.progressPercentage)}`} />
+                                                    <span className="text-base font-semibold text-slate-900 dark:text-slate-100">{student.progressPercentage} %</span>
+                                                </div>
+                                            </div>
+
+                                            <div className="self-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleMetricNavigate(student.studentId, "homework")}
+                                                    className="text-base font-semibold text-slate-900 transition hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
+                                                >
+                                                    {student.homeworkSubmissionsCount}
+                                                </button>
+                                            </div>
+                                            <div className="self-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleMetricNavigate(student.studentId, "quizzes")}
+                                                    className="text-base font-semibold text-slate-900 transition hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
+                                                >
+                                                    {student.quizAttemptsCount}
+                                                </button>
+                                            </div>
+                                            <div className="self-center">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleMetricNavigate(student.studentId, "discussions")}
+                                                    className="text-base font-semibold text-slate-900 transition hover:text-blue-600 dark:text-slate-100 dark:hover:text-blue-400"
+                                                >
+                                                    {student.messageCount}
+                                                </button>
+                                            </div>
+                                            <div className="self-center">
+                                                <div className="text-sm font-semibold text-slate-800 dark:text-slate-100">{lastActivity.date}</div>
+                                                <div className="mt-1 text-xs text-slate-500 dark:text-slate-400">{lastActivity.time}</div>
                                             </div>
                                         </div>
-
-                                        <div className="self-center text-base font-semibold text-slate-900 dark:text-slate-100">
-                                            {student.homeworkSubmissionsCount}
-                                        </div>
-                                        <div className="self-center text-base font-semibold text-slate-900 dark:text-slate-100">
-                                            {student.quizAttemptsCount}
-                                        </div>
-                                        <div className="self-center text-base font-semibold text-slate-900 dark:text-slate-100">
-                                            {student.messageCount}
-                                        </div>
-                                        <div className="self-center">
-                                            <div className="text-sm font-medium text-slate-700 dark:text-slate-200">{formatDateTime(student.lastActivityAt)}</div>
-                                        </div>
-                                    </div>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     </div>

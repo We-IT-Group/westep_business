@@ -27,6 +27,7 @@ interface UnifiedEditorProps {
         moduleId?: string | null;
     };
     courseName?: string;
+    focusedStudentId?: string;
     onBack?: () => void;
 }
 
@@ -75,6 +76,7 @@ const PricingPlaceholder = () => (
 const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
     session,
     courseName,
+    focusedStudentId,
     onBack,
 }) => {
     const {id: courseId} = useParams<{ id: string }>();
@@ -107,9 +109,9 @@ const UnifiedEditor: React.FC<UnifiedEditorProps> = ({
             )}
             {session.type === "analytics" && courseId && <TrackingLinksSection courseId={courseId}/>}
             {session.type === "students" && courseId && <CourseStudentsSection courseId={courseId}/>}
-            {session.type === "homework" && courseId && <HomeworkReviewSection courseId={courseId}/>}
-            {session.type === "discussions" && courseId && <DiscussionSection courseId={courseId}/>}
-            {session.type === "quizzes" && courseId && <QuizAnalyticsSection courseId={courseId}/>}
+            {session.type === "homework" && courseId && <HomeworkReviewSection courseId={courseId} initialStudentId={focusedStudentId}/>}
+            {session.type === "discussions" && courseId && <DiscussionSection courseId={courseId} initialStudentId={focusedStudentId}/>}
+            {session.type === "quizzes" && courseId && <QuizAnalyticsSection courseId={courseId} initialStudentId={focusedStudentId}/>}
             {session.type === "module" && <ModulePlaceholder/>}
             {session.type === "course" && <CoursePlaceholder courseName={courseName}/>}
             {session.type === "pricing" && <PricingPlaceholder/>}

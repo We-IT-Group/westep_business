@@ -77,7 +77,13 @@ function RevisionBadge({visible}: {visible?: boolean}) {
     );
 }
 
-export default function HomeworkReviewSection({courseId}: {courseId: string}) {
+export default function HomeworkReviewSection({
+    courseId,
+    initialStudentId,
+}: {
+    courseId: string;
+    initialStudentId?: string;
+}) {
     const {data: user} = useUser();
     const {data: modules, isLoading: isModulesLoading} = useGetModules(courseId);
     const [selectedLessonId, setSelectedLessonId] = useState<string | null>(null);
@@ -108,6 +114,7 @@ export default function HomeworkReviewSection({courseId}: {courseId: string}) {
                 }}
                 isStudent={isStudent}
                 canReview={canReview}
+                initialStudentId={initialStudentId}
             />
         </div>
     );
@@ -122,6 +129,7 @@ function LessonHomeworkPanel({
     onSelectLesson,
     isStudent,
     canReview,
+    initialStudentId,
 }: {
     lessonId: string | null;
     lessons: Lesson[];
@@ -131,6 +139,7 @@ function LessonHomeworkPanel({
     onSelectLesson: (lessonId: string) => void;
     isStudent: boolean;
     canReview: boolean;
+    initialStudentId?: string;
 }) {
     const tasksQuery = useLessonTasksReview(lessonId || undefined, !!lessonId);
     const homeworkTasks = useMemo(
@@ -230,7 +239,7 @@ function LessonHomeworkPanel({
                 isStudent ? (
                     <StudentHomeworkPanel lessonId={lessonId || ""} taskId={selectedTaskId}/>
                 ) : canReview ? (
-                    <StaffHomeworkPanel taskId={selectedTaskId}/>
+                    <StaffHomeworkPanel taskId={selectedTaskId} initialStudentId={initialStudentId}/>
                 ) : (
                     <EmptyState
                         title="Homework paneli yopiq"
@@ -418,7 +427,7 @@ function StudentHomeworkPanel({lessonId, taskId}: {lessonId: string; taskId: str
     );
 }
 
-function StaffHomeworkPanel({taskId}: {taskId: string}) {
+function StaffHomeworkPanel({taskId, initialStudentId}: {taskId: string; initialStudentId?: string}) {
     const submissionsQuery = useHomeworkSubmissions(taskId);
     const [reviewTarget, setReviewTarget] = useState<HomeworkSubmissionReview | null>(null);
     const [selectedStudentId, setSelectedStudentId] = useState<string | null>(null);
@@ -451,6 +460,14 @@ function StaffHomeworkPanel({taskId}: {taskId: string}) {
         () => studentBuckets.find((student) => student.studentId === selectedStudentId) || null,
         [selectedStudentId, studentBuckets],
     );
+
+    useEffect(() => {
+        if (!initialStudentId || selectedStudentId) return;
+        const matchingStudent = studentBuckets.find((student) => student.studentId === initialStudentId);
+        if (matchingStudent) {
+            setSelectedStudentId(matchingStudent.studentId);
+        }
+    }, [initialStudentId, selectedStudentId, studentBuckets]);
 
     return (
         <div className="space-y-6">
