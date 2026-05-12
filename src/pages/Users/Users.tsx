@@ -160,11 +160,7 @@ export default function Users() {
             </section>
 
             <section className="rounded-[24px] border border-slate-200 bg-white p-4 shadow-[0_14px_34px_rgba(15,23,42,0.05)] dark:border-slate-800 dark:bg-slate-950 dark:shadow-[0_14px_34px_rgba(2,6,23,0.34)]">
-                <div className="rounded-[22px] border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-                    `Qo‘shish` tugmasi orqali mavjud userni jamoaga ulang. Telefonni `+998770440105` yoki `998770440105` formatda yozishingiz mumkin.
-                </div>
-
-                <div className="mt-4 flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+                <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                     <div>
                         <h2 className="text-xl font-semibold tracking-tight text-slate-950 dark:text-slate-100">Joriy ro‘yxat</h2>
                         <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
