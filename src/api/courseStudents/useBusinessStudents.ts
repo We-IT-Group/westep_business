@@ -1,5 +1,12 @@
-import {useMutation, useQueryClient} from "@tanstack/react-query";
-import {createBusinessStudent} from "./businessStudentsApi.ts";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
+import {createBusinessStudent, getBusinessStudents} from "./businessStudentsApi.ts";
+
+export const useBusinessStudents = () =>
+    useQuery({
+        queryKey: ["business-students"],
+        queryFn: getBusinessStudents,
+        retry: false,
+    });
 
 export const useCreateBusinessStudent = () => {
     const qc = useQueryClient();
@@ -7,7 +14,10 @@ export const useCreateBusinessStudent = () => {
     return useMutation({
         mutationFn: createBusinessStudent,
         onSuccess: async () => {
-            await qc.invalidateQueries({queryKey: ["course-students"]});
+            await Promise.all([
+                qc.invalidateQueries({queryKey: ["course-students"]}),
+                qc.invalidateQueries({queryKey: ["business-students"]}),
+            ]);
         },
     });
 };

@@ -30,6 +30,7 @@ import {parseApiError} from "../../utils/apiError.ts";
 import {Button} from "../ui/button.tsx";
 import {Textarea} from "../ui/textarea.tsx";
 import {Badge} from "../ui/badge.tsx";
+import HomeworkInboxManager from "./homeworkInbox/HomeworkInboxManager.tsx";
 
 type ModuleWithLessons = Module & {lessons?: Lesson[]};
 
@@ -99,6 +100,10 @@ export default function HomeworkReviewSection({
             setSelectedLessonId(allLessons[0].id);
         }
     }, [allLessons, selectedLessonId]);
+
+    if (canReview && !isStudent) {
+        return <HomeworkInboxManager courseId={courseId} initialStudentId={initialStudentId}/>;
+    }
 
     return (
         <div className="flex min-h-[700px] flex-col p-6">

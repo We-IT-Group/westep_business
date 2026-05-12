@@ -19,22 +19,14 @@ const AppSidebar: React.FC = () => {
         >
             <div className={`border-b border-gray-100 pb-5 pt-5 dark:border-slate-800 ${isExpanded ? "px-5" : "px-3"}`}>
                 <div className={`flex items-center ${isExpanded ? "justify-between gap-3" : "justify-center"}`}>
-                    <Link to="/" className={`flex items-center ${isExpanded ? "gap-3" : "justify-center"}`}>
-                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-50 shadow-sm ring-1 ring-blue-100 dark:bg-slate-900 dark:ring-slate-700">
-                            <img
-                                src={logo}
-                                alt="Westep"
-                                className="h-5 w-5 object-contain"
-                            />
-                        </div>
-                        {isExpanded ? (
-                            <div>
-                                <div className="text-base font-black uppercase tracking-[0.08em] text-slate-900 dark:text-white">Westep</div>
-                                <div className="text-[11px] font-bold uppercase tracking-[0.24em] text-blue-500/80 dark:text-blue-400/80">
-                                    Business Studio
-                                </div>
-                            </div>
-                        ) : null}
+                    <Link to="/" className={`flex items-center ${isExpanded ? "justify-start" : "justify-center"}`}>
+                        <img
+                            src={logo}
+                            alt="Westep"
+                            className={`object-contain transition-all duration-300 ${
+                                isExpanded ? "h-auto w-[150px]" : "h-6 w-6"
+                            }`}
+                        />
                     </Link>
 
                     <button
