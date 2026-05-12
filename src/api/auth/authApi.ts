@@ -1,7 +1,7 @@
 // src/api/filesApi.ts
 import apiClient from "../apiClient";
 import {getItem, setItem} from "../../utils/utils.ts";
-import {BusinessType} from "../../types/types.ts";
+import type {ApiErrorResponse, BusinessType, DeviceLimitExceededDetails} from "../../types/types.ts";
 import {ApiRequestError, parseApiError} from "../../utils/apiError.ts";
 
 const asRecord = (value: unknown): Record<string, unknown> | null =>
@@ -71,19 +71,56 @@ const normalizeVerifyCodeError = (error: unknown) => {
     return parsedError;
 };
 
+export class DeviceLimitExceededError extends ApiRequestError {
+    details: DeviceLimitExceededDetails;
 
-export const login = async (body: { phone: string; password: string }) => {
+    constructor(message: string, details: DeviceLimitExceededDetails, status = 409) {
+        super(message, status, details);
+        this.name = "DeviceLimitExceededError";
+        this.details = details;
+    }
+}
+
+type LoginPayload = {
+    phone: string;
+    password: string;
+    deviceId: string;
+    deviceName: string;
+    replaceSessionId?: string;
+};
+
+export const login = async (body: LoginPayload) => {
     try {
         const {data} = await apiClient.post("/auth/login", {}, {
             params: {
                 phone: body.phone,
                 password: body.password,
+                deviceId: body.deviceId,
+                deviceName: body.deviceName,
+                ...(body.replaceSessionId ? {replaceSessionId: body.replaceSessionId} : {}),
             }
         });
         setItem<string>("accessToken", data?.accessToken)
         setItem<string>("refreshToken", data?.refreshToken)
         return data
     } catch (error) {
+        const parsedError = parseApiError(error, "Login amalga oshmadi.");
+        if (parsedError.status === 409) {
+            const payload =
+                (error as {response?: {data?: ApiErrorResponse<DeviceLimitExceededDetails>}})?.response?.data;
+            const details = payload?.details;
+
+            if (details && Array.isArray(details.activeDevices)) {
+                throw new DeviceLimitExceededError(
+                    payload?.message || parsedError.message,
+                    {
+                        maxDevices: details.maxDevices,
+                        activeDevices: details.activeDevices,
+                    },
+                    409,
+                );
+            }
+        }
         throw normalizeLoginError(error);
     }
 };

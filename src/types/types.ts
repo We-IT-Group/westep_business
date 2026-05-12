@@ -28,6 +28,30 @@ export interface User {
     roleName: string
 }
 
+export interface UserDeviceSession {
+    sessionId: string;
+    deviceId: string;
+    deviceName: string;
+    platform?: string;
+    browser?: string;
+    ipAddress?: string;
+    lastSeenAt?: string;
+}
+
+export interface DeviceLimitExceededDetails {
+    maxDevices: number;
+    activeDevices: UserDeviceSession[];
+}
+
+export interface ApiErrorResponse<TDetails = unknown> {
+    timestamp?: string;
+    status?: number;
+    error?: string;
+    message?: string;
+    path?: string;
+    details?: TDetails;
+}
+
 export interface Course extends Common {
     name: string,
     description: string,
@@ -210,4 +234,48 @@ export interface BusinessStudentOverview {
     totalPaidAmount: number;
     completedCoursesCount: number;
     ongoingCoursesCount: number;
+}
+
+export interface CourseShortInfo {
+    courseId: string;
+    courseName: string;
+}
+
+export interface BusinessMember {
+    id: string;
+    fullName: string;
+    phone: string;
+    role: string;
+    courseNames: string[];
+    assignedCourses: CourseShortInfo[];
+    avatarAttachmentId?: string;
+    avatarUrl?: string;
+}
+
+export interface BusinessResponse {
+    id: string;
+    name: string;
+    address?: string;
+    phone?: string;
+    description?: string;
+    studentsCount?: number | null;
+    ownerId: string;
+    ownerFullName: string;
+    ownerAvatarAttachmentId?: string;
+    ownerAvatarUrl?: string;
+    assistants: Record<string, string>;
+    members: BusinessMember[];
+}
+
+export interface CourseStaffMember {
+    userId: string;
+    fullName: string;
+    phone: string;
+    role: string;
+    avatarAttachmentId?: string;
+    avatarUrl?: string;
+}
+
+export interface BusinessMemberCourseAssignmentRequest {
+    courseIds: string[];
 }

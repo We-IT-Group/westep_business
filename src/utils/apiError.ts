@@ -1,18 +1,21 @@
-import { AxiosError } from "axios";
+import {AxiosError} from "axios";
+import type {ApiErrorResponse} from "../types/types.ts";
 
 export interface ApiErrorPayload {
     message?: string;
     error?: string;
-    details?: string;
+    details?: unknown;
 }
 
 export class ApiRequestError extends Error {
     status?: number;
+    details?: unknown;
 
-    constructor(message: string, status?: number) {
+    constructor(message: string, status?: number, details?: unknown) {
         super(message);
         this.name = "ApiRequestError";
         this.status = status;
+        this.details = details;
     }
 }
 
@@ -22,15 +25,14 @@ export const parseApiError = (error: unknown, fallback = "Xatolik yuz berdi.") =
     }
 
     if (error instanceof AxiosError) {
-        const payload = error.response?.data as ApiErrorPayload | undefined;
+        const payload = error.response?.data as ApiErrorResponse<unknown> | ApiErrorPayload | undefined;
         const message =
             payload?.message ||
             payload?.error ||
-            payload?.details ||
             error.message ||
             fallback;
 
-        return new ApiRequestError(message, error.response?.status);
+        return new ApiRequestError(message, error.response?.status, payload?.details);
     }
 
     if (error instanceof Error) {

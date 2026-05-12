@@ -1,6 +1,7 @@
 import {useQuery, useMutation, useQueryClient} from "@tanstack/react-query";
 import {
     checkPhoneNumber,
+    DeviceLimitExceededError,
     getCurrentUser,
     login,
     logout,
@@ -13,6 +14,7 @@ import {useNavigate} from "react-router-dom";
 import {getItem, removeItem} from "../../utils/utils.ts";
 import {useToast} from "../../hooks/useToast.tsx";
 import {showErrorToast} from "../../utils/toast.tsx";
+import {getCurrentDeviceMeta} from "../../utils/device.ts";
 
 export const normalizeRoleName = (roleName?: string) => (roleName || "").toUpperCase();
 
@@ -81,9 +83,35 @@ export const useLogin = () => {
             }
         },
         onError: (error: Error) => {
+            if (error instanceof DeviceLimitExceededError) {
+                return;
+            }
             toast.error(error.message);
         },
     });
+};
+
+export const useDeviceAwareLogin = () => {
+    const loginMutation = useLogin();
+
+    const loginWithCurrentDevice = async (payload: {
+        phone: string;
+        password: string;
+        replaceSessionId?: string;
+    }) => {
+        const deviceMeta = getCurrentDeviceMeta();
+
+        return await loginMutation.mutateAsync({
+            ...payload,
+            deviceId: deviceMeta.deviceId,
+            deviceName: deviceMeta.deviceName,
+        });
+    };
+
+    return {
+        ...loginMutation,
+        loginWithCurrentDevice,
+    };
 };
 
 export const useRegister = () => {
