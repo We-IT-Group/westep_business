@@ -6,6 +6,7 @@ import {useDeleteMyDevice, useMyDevices} from "../../api/userDevices/useUserDevi
 import {isCurrentDeviceSession} from "../../utils/device.ts";
 import Button from "../../components/ui/button/Button.tsx";
 import type {UserDeviceSession} from "../../types/types.ts";
+import BusinessWalletTopUpSection from "../../components/payments/BusinessWalletTopUpSection.tsx";
 
 const formatDateTime = (value?: string) => {
     if (!value) {
@@ -91,6 +92,8 @@ export default function Settings() {
     return (
         <div className="flex flex-col gap-6 pb-8">
             <PageMeta title="Sozlamalar" description="Qurilmalar va sessiyalar boshqaruvi"/>
+
+            <BusinessWalletTopUpSection defaultPhoneNumber={user?.phoneNumber}/>
 
             <section className="relative overflow-hidden rounded-[36px] border border-white/70 bg-[radial-gradient(circle_at_top_left,_rgba(56,189,248,0.18),_transparent_35%),linear-gradient(135deg,_rgba(255,255,255,0.97),_rgba(248,250,252,0.92))] shadow-[0_32px_90px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.18),_transparent_35%),linear-gradient(135deg,_rgba(2,6,23,0.98),_rgba(15,23,42,0.92))] dark:shadow-[0_32px_90px_rgba(2,6,23,0.45)]">
                 <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(148,163,184,0.08)_1px,transparent_1px),linear-gradient(90deg,rgba(148,163,184,0.08)_1px,transparent_1px)] bg-[size:150px_150px] opacity-40 dark:opacity-20"/>
@@ -224,22 +227,8 @@ export default function Settings() {
                                                     ) : null}
                                                 </div>
                                                 <p className="mt-2 text-sm font-medium text-slate-500 dark:text-slate-400">
-                                                    {getDeviceMeta(device)}
+                                                    {`${getDeviceMeta(device)} • Oxirgi faollik: ${formatDateTime(device.lastSeenAt)}`}
                                                 </p>
-                                                <div className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
-                                                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
-                                                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Sessiya ID</p>
-                                                        <p className="mt-2 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{device.sessionId}</p>
-                                                    </div>
-                                                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
-                                                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Device ID</p>
-                                                        <p className="mt-2 truncate text-sm font-semibold text-slate-900 dark:text-slate-100">{device.deviceId || "-"}</p>
-                                                    </div>
-                                                    <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-700 dark:bg-slate-950">
-                                                        <p className="text-[10px] font-black uppercase tracking-[0.22em] text-slate-400 dark:text-slate-500">Oxirgi faollik</p>
-                                                        <p className="mt-2 text-sm font-semibold text-slate-900 dark:text-slate-100">{formatDateTime(device.lastSeenAt)}</p>
-                                                    </div>
-                                                </div>
                                             </div>
                                         </div>
 
@@ -254,11 +243,6 @@ export default function Settings() {
                                             >
                                                 {isCurrent ? "Joriy sessiya" : "Qurilmani o‘chirish"}
                                             </Button>
-                                            <p className="mt-3 text-xs font-medium leading-5 text-slate-400 dark:text-slate-500">
-                                                {isCurrent
-                                                    ? "Joriy device sessiyasi shu yerda o‘chirilmaydi."
-                                                    : "Keraksiz qurilma sessiyasini yopib, login limitni bo‘shatasiz."}
-                                            </p>
                                         </div>
                                     </div>
                                 </div>

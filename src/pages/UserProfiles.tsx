@@ -1,8 +1,9 @@
 import {BookOpen, LoaderCircle, Phone, ShieldCheck, Users, UserRound} from "lucide-react";
 import PageMeta from "../components/common/PageMeta";
-import {useUser} from "../api/auth/useAuth.ts";
+import {isBusinessAdminRole, useUser} from "../api/auth/useAuth.ts";
 import {useGetBusinessCourses, useGetMyCourses} from "../api/courses/useCourse.ts";
 import {useGetUsers} from "../api/businessUser/useBusinessUser.ts";
+import BusinessWalletTopUpSection from "../components/payments/BusinessWalletTopUpSection.tsx";
 
 const getFullName = (firstname?: string, lastname?: string) =>
     [firstname, lastname].filter(Boolean).join(" ").trim() || "Foydalanuvchi";
@@ -28,6 +29,7 @@ export default function UserProfiles() {
     const fullName = getFullName(user?.firstname, user?.lastname);
     const roleLabel = getRoleLabel(user?.roleName);
     const phoneLabel = user?.phoneNumber ? `+${user.phoneNumber}` : "Telefon kiritilmagan";
+    const shouldShowTopUp = isBusinessAdminRole(user?.roleName);
 
     const statCards = [
         {
@@ -64,6 +66,13 @@ export default function UserProfiles() {
                 title="Profil"
                 description="Foydalanuvchi profili"
             />
+
+            {shouldShowTopUp ? (
+                <BusinessWalletTopUpSection
+                    defaultPhoneNumber={user?.phoneNumber}
+                    variant="hero"
+                />
+            ) : null}
 
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-950">
                 <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">

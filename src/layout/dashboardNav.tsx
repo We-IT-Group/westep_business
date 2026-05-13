@@ -1,5 +1,5 @@
 import type {ReactNode} from "react";
-import {LayoutDashboard, BookOpen, Users, BarChart3, Settings, MessageCircle} from "lucide-react";
+import {LayoutDashboard, BookOpen, Users, BarChart3, Settings, MessageCircle, Wallet} from "lucide-react";
 import {isCourseManagerRole, isLessonQuizManagerRole, isStudentRole} from "../api/auth/useAuth.ts";
 
 type DashboardNavIcon =
@@ -11,7 +11,8 @@ type DashboardNavIcon =
     | "schedule"
     | "messages"
     | "analytics"
-    | "settings";
+    | "settings"
+    | "sales";
 
 export type DashboardNavItem = {
     label: string;
@@ -51,6 +52,12 @@ const managerDashboardNavItems: DashboardNavItem[] = [
         path: "/analytics",
         icon: "analytics",
         description: "Natijalar va platforma bo‘yicha tahlillar.",
+    },
+    {
+        label: "Sotuvlar",
+        path: "/sales",
+        icon: "sales",
+        description: "Business wallet tranzaksiyalari va sotuvlar tarixini ko‘ring.",
     },
     {
         label: "Sozlamalar",
@@ -150,6 +157,13 @@ export const getDashboardPageMeta = (pathname: string): DashboardPageMeta => {
         };
     }
 
+    if (pathname.startsWith("/sales")) {
+        return {
+            title: "Sotuvlar",
+            description: "Business wallet tranzaksiyalari va sotuvlar tarixini ko‘ring.",
+        };
+    }
+
     return {
         title: "Boshqaruv",
         description: "Platformangizning umumiy holati.",
@@ -199,6 +213,10 @@ export const renderDashboardIcon = (
         case "settings":
             return (
                 <Settings className={className}/>
+            );
+        case "sales":
+            return (
+                <Wallet className={className}/>
             );
         default:
             return null;

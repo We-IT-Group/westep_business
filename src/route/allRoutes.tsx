@@ -27,6 +27,7 @@ import Messages from "../pages/Dashboard/Messages.tsx";
 import Analytics from "../pages/Dashboard/Analytics.tsx";
 import Settings from "../pages/Dashboard/Settings.tsx";
 import PublicTrackingRedirect from "../pages/PublicTrackingRedirect.tsx";
+import Sales from "../pages/Dashboard/Sales.tsx";
 
 export const authProtectedRoutes = [
     {index: true, element: <HomeRedirect/>, path: "/"},
@@ -50,6 +51,7 @@ export const authProtectedRoutes = [
     {path: "/schedule", element: <Schedule/>},
     {path: "/messages", element: <Messages/>},
     {path: "/analytics", element: <Analytics/>},
+    {path: "/sales", element: <Sales/>},
     {path: "/settings", element: <Settings/>},
     {path: "/users/update/:id", element: <Users/>},
     {path: "/users/add", element: <AddUsers/>},

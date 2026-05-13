@@ -3,10 +3,15 @@ import {DropdownItem} from "../ui/dropdown/DropdownItem";
 import {Dropdown} from "../ui/dropdown/Dropdown";
 import {Link} from "react-router-dom";
 import {useUser} from "../../api/auth/useAuth.ts";
-import {User, Settings, Shield, LifeBuoy, LogOut, ChevronDown} from "lucide-react";
+import {User, Settings, Shield, LifeBuoy, LogOut, ChevronDown, Wallet} from "lucide-react";
+import {useBusinessWallet} from "../../api/payments/useBusinessWallet.ts";
+
+const formatMoney = (value: number) =>
+    `${new Intl.NumberFormat("uz-UZ").format(Math.round(value))} so‘m`;
 
 export default function UserDropdown() {
     const {data: user} = useUser();
+    const {data: wallet} = useBusinessWallet();
     const [isOpen, setIsOpen] = useState(false);
 
     function toggleDropdown() {
@@ -51,6 +56,15 @@ export default function UserDropdown() {
                     <div className="mt-3 flex items-center gap-2 px-3 py-1 bg-white border border-slate-200 rounded-full w-fit shadow-sm">
                         <Shield className="w-3 h-3 text-blue-600" />
                         <span className="text-[10px] font-black text-slate-600 uppercase tracking-widest">{user?.roleName}</span>
+                    </div>
+                    <div className="mt-3 flex items-center gap-3 rounded-2xl border border-emerald-100 bg-white px-4 py-3 shadow-sm">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-600">
+                            <Wallet className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Biznes hisobi</p>
+                            <p className="text-base font-black text-slate-900">{formatMoney(wallet?.balance || 0)}</p>
+                        </div>
                     </div>
                 </div>
 

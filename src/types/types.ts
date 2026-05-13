@@ -52,6 +52,45 @@ export interface ApiErrorResponse<TDetails = unknown> {
     details?: TDetails;
 }
 
+export interface BusinessWalletTopUpCheckoutRequest {
+    phoneNumber: string;
+    amount: number;
+}
+
+export interface PaymentCheckoutResponse {
+    provider: string;
+    checkoutUrl: string;
+    transactionId: string;
+    orderId: string;
+}
+
+export interface BusinessWalletSummary {
+    balance: number;
+    currency?: string;
+    salesBlocked?: boolean;
+}
+
+export interface BusinessWalletTransaction {
+    transactionId: string;
+    orderId?: string;
+    phoneNumber?: string;
+    studentId?: string;
+    studentName?: string;
+    courseId?: string;
+    courseName?: string;
+    moduleNames: string[];
+    saleAmount: number;
+    feeAmount: number;
+    amount: number;
+    provider?: string;
+    currency?: string;
+    status?: string;
+    displayName?: string;
+    sourceType?: string;
+    paidAt?: string;
+    createdAt?: string;
+}
+
 export interface Course extends Common {
     name: string,
     description: string,
