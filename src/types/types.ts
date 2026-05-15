@@ -160,6 +160,7 @@ export interface TrackingLinkAnalytics {
     paidPurchases: number;
     freeEnrolls?: number;
     paidAmount?: number;
+    appliedFeeAmount?: number;
     failedOrAbandoned: number;
     refunded: number;
     refundedAmount?: number;

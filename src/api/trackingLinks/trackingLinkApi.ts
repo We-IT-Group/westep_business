@@ -34,6 +34,7 @@ const emptyAnalytics: TrackingLinkAnalyticsResponse = {
     paidPurchases: 0,
     freeEnrolls: 0,
     paidAmount: 0,
+    appliedFeeAmount: 0,
     failedOrAbandoned: 0,
     refunded: 0,
     refundedAmount: 0,
@@ -77,7 +78,7 @@ const normalizeAnalytics = (
 
 export const createTrackingLink = async (courseId: string, body: TrackingLinkCreateRequest) => {
     try {
-        const {data} = await apiClient.post(`/tracking-links/courses/${courseId}`, body);
+        const {data} = await apiClient.post(`/course/${courseId}/tracking-links`, body);
         return data as TrackingLinkResponse;
     } catch (error) {
         throw parseApiError(error, "Tracking link yaratilmadi.");

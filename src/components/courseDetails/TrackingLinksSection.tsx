@@ -51,6 +51,7 @@ const emptyAnalytics: TrackingLinkAnalytics = {
     paidPurchases: 0,
     freeEnrolls: 0,
     paidAmount: 0,
+    appliedFeeAmount: 0,
     failedOrAbandoned: 0,
     refunded: 0,
     refundedAmount: 0,
@@ -283,6 +284,7 @@ function TrackingLinksSection({courseId}: { courseId: string }) {
         {label: "To‘langan xaridlar", value: courseAnalyticsQuery.data?.paidPurchases || 0},
         {label: "Tekin modullar", value: courseAnalyticsQuery.data?.freeEnrolls || 0},
         {label: "To‘langan summa", value: formatMoney(courseAnalyticsQuery.data?.paidAmount ?? courseAnalyticsQuery.data?.revenue)},
+        {label: "Qo‘llangan komissiya", value: formatMoney(courseAnalyticsQuery.data?.appliedFeeAmount)},
         {label: "Qaytarilgan summa", value: formatMoney(courseAnalyticsQuery.data?.refundedAmount)},
     ];
 
@@ -316,7 +318,7 @@ function TrackingLinksSection({courseId}: { courseId: string }) {
                     </div>
                 </section>
 
-                <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-7">
+                <section className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-8">
                     {summaryCards.map((card) => (
                         <div key={card.label} className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                             <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-500">{card.label}</p>
@@ -427,6 +429,7 @@ function TrackingLinksSection({courseId}: { courseId: string }) {
                                                             {label: "Xaridlar", value: analytics.paidPurchases},
                                                             {label: "Tekin modul", value: analytics.freeEnrolls || 0},
                                                             {label: "To‘lov", value: formatMoney(analytics.paidAmount ?? analytics.revenue)},
+                                                            {label: "Komissiya", value: formatMoney(analytics.appliedFeeAmount)},
                                                             {label: "Qaytarilgan", value: analytics.refunded},
                                                             {label: "Qaytgan summa", value: formatMoney(analytics.refundedAmount)},
                                                         ].map((item) => (
@@ -556,6 +559,7 @@ function TrackingLinksSection({courseId}: { courseId: string }) {
                                     {label: "To‘langan xaridlar", value: analyticsMap.get(analyticsLink.id)?.paidPurchases || 0},
                                     {label: "Tekin modullar", value: analyticsMap.get(analyticsLink.id)?.freeEnrolls || 0},
                                     {label: "To‘langan summa", value: formatMoney(analyticsMap.get(analyticsLink.id)?.paidAmount ?? analyticsMap.get(analyticsLink.id)?.revenue)},
+                                    {label: "Qo‘llangan komissiya", value: formatMoney(analyticsMap.get(analyticsLink.id)?.appliedFeeAmount)},
                                     {label: "Qaytarilgan", value: analyticsMap.get(analyticsLink.id)?.refunded || 0},
                                     {label: "Qaytarilgan summa", value: formatMoney(analyticsMap.get(analyticsLink.id)?.refundedAmount)},
                                 ].map((item) => (

@@ -17,7 +17,6 @@ import UnifiedEditor from "../../components/courseDetails/UnifiedEditor.tsx";
 import {useGetModules} from "../../api/module/useModule.ts";
 import {isCourseManagerRole, useUser} from "../../api/auth/useAuth.ts";
 import {useCourseDiscussionUnreadCount} from "../../api/discussionInbox/useDiscussionInbox.ts";
-import CourseStaffSection from "../../components/courseDetails/CourseStaffSection.tsx";
 
 type SessionType =
     | "lesson"
@@ -290,10 +289,6 @@ const CourseDetails = () => {
                     })}
                 </div>
             </section>
-
-            {canManageCourse && courseId ? (
-                <CourseStaffSection courseId={courseId} />
-            ) : null}
 
             {showLessonEditor ? (
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm dark:border-slate-800 dark:bg-slate-950">
