@@ -52,7 +52,7 @@ const getSessionMeta = (type: SessionType) => {
         case "analytics":
             return {
                 title: "Tahlillar",
-                description: "Tracking linklar va kurs ko‘rsatkichlari.",
+                description: "Tracking linklar va kurs tahlillari.",
             };
         case "students":
             return {

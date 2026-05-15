@@ -3,12 +3,16 @@ import {
     createTrackingLink,
     deleteTrackingLink,
     getCourseTrackingAnalytics,
+    getCourseTrackingLinks,
     getTrackingLinkAnalytics,
-    getTrackingLinkById,
-    getTrackingLinks,
+    getTrackingLink,
     updateTrackingLink,
 } from "./trackingLinkApi.ts";
-import {TrackingLink, TrackingLinkPayload} from "../../types/types.ts";
+import {
+    TrackingLink,
+    TrackingLinkCreateRequest,
+    TrackingLinkUpdateRequest,
+} from "../../types/types.ts";
 import {showErrorToast, showSuccessToast} from "../../utils/toast.tsx";
 
 const trackingLinksKey = (courseId: string) =>
@@ -17,10 +21,10 @@ const trackingLinksKey = (courseId: string) =>
 const trackingLinksAnalyticsKey = (courseId: string) =>
     ["tracking-links-analytics", courseId] as const;
 
-export const useTrackingLinks = (courseId: string) =>
+export const useTrackingLinks = (courseId: string, page = 0, size = 20) =>
     useQuery({
-        queryKey: trackingLinksKey(courseId),
-        queryFn: () => getTrackingLinks(courseId),
+        queryKey: [...trackingLinksKey(courseId), page, size],
+        queryFn: () => getCourseTrackingLinks(courseId, page, size),
         enabled: !!courseId,
     });
 
@@ -34,7 +38,7 @@ export const useCourseTrackingAnalytics = (courseId: string) =>
 export const useTrackingLink = (id?: string, enabled = true) =>
     useQuery({
         queryKey: ["tracking-link", id],
-        queryFn: () => getTrackingLinkById(id || ""),
+        queryFn: () => getTrackingLink(id || ""),
         enabled: !!id && enabled,
     });
 
@@ -52,7 +56,7 @@ export const useCreateTrackingLink = (courseId: string) => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (body: TrackingLinkPayload) => createTrackingLink(courseId, body),
+        mutationFn: (body: TrackingLinkCreateRequest) => createTrackingLink(courseId, body),
         onSuccess: async () => {
             await queryClient.invalidateQueries({queryKey: trackingLinksKey(courseId)});
             await queryClient.invalidateQueries({queryKey: trackingLinksAnalyticsKey(courseId)});
@@ -68,7 +72,7 @@ export const useUpdateTrackingLink = (courseId: string) => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: ({id, body}: { id: string; body: Partial<TrackingLinkPayload & { isActive: boolean }> }) =>
+        mutationFn: ({id, body}: { id: string; body: TrackingLinkUpdateRequest }) =>
             updateTrackingLink(id, body),
         onSuccess: async (_, variables) => {
             await queryClient.invalidateQueries({queryKey: trackingLinksKey(courseId)});

@@ -1,47 +1,52 @@
 import apiClient from "../apiClient.ts";
-import {
-    TrackingLink,
-    TrackingLinkAnalytics,
-    TrackingLinkPayload,
+import type {
+    CourseTrackingAnalyticsResponse,
+    TrackingLinkAnalyticsResponse,
+    TrackingLinkCreateRequest,
+    TrackingLinkResponse,
+    TrackingLinkUpdateRequest,
 } from "../../types/types.ts";
 import {parseApiError} from "../../utils/apiError.ts";
 
 interface TrackingLinksResponse {
-    content?: TrackingLink[];
-    items?: TrackingLink[];
-    data?: TrackingLink[];
+    content?: TrackingLinkResponse[];
+    items?: TrackingLinkResponse[];
+    data?: TrackingLinkResponse[];
     totalElements?: number;
     totalPages?: number;
     number?: number;
     size?: number;
 }
 
-export interface TrackingLinksPage {
-    content: TrackingLink[];
+export interface TrackingLinkListResponse {
+    content: TrackingLinkResponse[];
     totalElements: number;
     totalPages: number;
     number: number;
     size: number;
 }
 
-const emptyAnalytics: TrackingLinkAnalytics = {
+const emptyAnalytics: TrackingLinkAnalyticsResponse = {
     clicks: 0,
     uniqueClicks: 0,
     leads: 0,
     checkoutStarted: 0,
     paidPurchases: 0,
+    freeEnrolls: 0,
+    paidAmount: 0,
     failedOrAbandoned: 0,
     refunded: 0,
+    refundedAmount: 0,
     revenue: 0,
     conversionRate: 0,
     lastActivityAt: null,
 };
 
 const normalizeTrackingLinksPage = (
-    response: TrackingLinksResponse | TrackingLink[] | undefined,
+    response: TrackingLinksResponse | TrackingLinkResponse[] | undefined,
     page: number,
     size: number,
-): TrackingLinksPage => {
+): TrackingLinkListResponse => {
     if (Array.isArray(response)) {
         return {
             content: response,
@@ -63,42 +68,46 @@ const normalizeTrackingLinksPage = (
     };
 };
 
-const normalizeAnalytics = (data: Partial<TrackingLinkAnalytics> | undefined): TrackingLinkAnalytics => ({
+const normalizeAnalytics = (
+    data: Partial<TrackingLinkAnalyticsResponse> | Partial<CourseTrackingAnalyticsResponse> | undefined,
+) => ({
     ...emptyAnalytics,
     ...data,
 });
 
-export const createTrackingLink = async (courseId: string, body: TrackingLinkPayload) => {
+export const createTrackingLink = async (courseId: string, body: TrackingLinkCreateRequest) => {
     try {
-        const {data} = await apiClient.post(`/course/${courseId}/tracking-links`, body);
-        return data as TrackingLink;
+        const {data} = await apiClient.post(`/tracking-links/courses/${courseId}`, body);
+        return data as TrackingLinkResponse;
     } catch (error) {
         throw parseApiError(error, "Tracking link yaratilmadi.");
     }
 };
 
-export const getTrackingLinks = async (courseId: string) => {
+export const getCourseTrackingLinks = async (courseId: string, page = 0, size = 20) => {
     try {
-        const {data} = await apiClient.get(`/course/${courseId}/tracking-links`);
-        return normalizeTrackingLinksPage(data, 0, 20);
+        const {data} = await apiClient.get(`/course/${courseId}/tracking-links`, {
+            params: {page, size},
+        });
+        return normalizeTrackingLinksPage(data, page, size);
     } catch (error) {
         throw parseApiError(error, "Tracking linklar yuklanmadi.");
     }
 };
 
-export const getTrackingLinkById = async (id: string) => {
+export const getTrackingLink = async (id: string) => {
     try {
         const {data} = await apiClient.get(`/tracking-links/${id}`);
-        return data as TrackingLink;
+        return data as TrackingLinkResponse;
     } catch (error) {
         throw parseApiError(error, "Tracking link topilmadi.");
     }
 };
 
-export const updateTrackingLink = async (id: string, body: Partial<TrackingLinkPayload & { isActive: boolean }>) => {
+export const updateTrackingLink = async (id: string, body: TrackingLinkUpdateRequest) => {
     try {
-        const {data} = await apiClient.patch(`/tracking-links/${id}`, body);
-        return data as TrackingLink;
+        const {data} = await apiClient.put(`/tracking-links/${id}`, body);
+        return data as TrackingLinkResponse;
     } catch (error) {
         throw parseApiError(error, "Tracking link yangilanmadi.");
     }

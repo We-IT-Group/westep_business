@@ -157,8 +157,11 @@ export interface TrackingLinkAnalytics {
     leads: number;
     checkoutStarted: number;
     paidPurchases: number;
+    freeEnrolls?: number;
+    paidAmount?: number;
     failedOrAbandoned: number;
     refunded: number;
+    refundedAmount?: number;
     revenue: number;
     conversionRate: number;
     lastActivityAt?: string | null;
@@ -191,6 +194,12 @@ export interface TrackingLinkPayload {
     utmCampaign?: string;
     expiresAt?: string | null;
 }
+
+export type TrackingLinkResponse = TrackingLink;
+export type TrackingLinkCreateRequest = TrackingLinkPayload;
+export type TrackingLinkUpdateRequest = Partial<TrackingLinkPayload & { isActive: boolean }>;
+export type TrackingLinkAnalyticsResponse = TrackingLinkAnalytics;
+export type CourseTrackingAnalyticsResponse = TrackingLinkAnalytics;
 
 export interface NotificationItem extends Common {
     title: string;
