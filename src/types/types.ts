@@ -64,6 +64,10 @@ export interface PaymentCheckoutResponse {
     orderId: string;
 }
 
+export interface PaymentCheckoutUrlResponse {
+    checkoutUrl: string;
+}
+
 export interface BusinessWalletSummary {
     balance: number;
     currency?: string;
