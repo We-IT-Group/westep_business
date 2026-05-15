@@ -57,10 +57,7 @@ export interface BusinessWalletTopUpCheckoutRequest {
     amount: number;
 }
 
-export interface PaymentCheckoutResponse {
-    provider: string;
-    checkoutUrl: string;
-    transactionId: string;
+export interface PaymentOrderResponse {
     orderId: string;
 }
 

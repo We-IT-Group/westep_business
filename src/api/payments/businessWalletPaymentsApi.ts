@@ -2,7 +2,7 @@ import apiClient from "../apiClient.ts";
 import {parseApiError} from "../../utils/apiError.ts";
 import type {
     BusinessWalletTopUpCheckoutRequest,
-    PaymentCheckoutResponse,
+    PaymentOrderResponse,
     PaymentCheckoutUrlResponse,
 } from "../../types/types.ts";
 
@@ -12,14 +12,13 @@ const asRecord = (value: unknown): Record<string, unknown> | null =>
 const asString = (value: unknown) =>
     typeof value === "string" ? value : "";
 
-const normalizePaymentCheckoutResponse = (value: unknown): PaymentCheckoutResponse => {
+const normalizePaymentOrderResponse = (value: unknown): PaymentOrderResponse => {
     const record = asRecord(value);
+    const nested = asRecord(record?.data) || asRecord(record?.order);
+    const source = nested || record || {};
 
     return {
-        provider: asString(record?.provider).trim() || "PAYME",
-        checkoutUrl: asString(record?.checkoutUrl).trim(),
-        transactionId: asString(record?.transactionId).trim(),
-        orderId: asString(record?.orderId).trim(),
+        orderId: asString(source.orderId).trim(),
     };
 };
 
@@ -35,10 +34,10 @@ const normalizePaymentCheckoutUrlResponse = (value: unknown): PaymentCheckoutUrl
 
 export const createBusinessWalletTopUpCheckout = async (payload: BusinessWalletTopUpCheckoutRequest) => {
     try {
-        const {data} = await apiClient.post("/payments/business-wallet/payme/checkout", payload);
-        return normalizePaymentCheckoutResponse(data);
+        const {data} = await apiClient.post("/payments/business-wallet/payme/order", payload);
+        return normalizePaymentOrderResponse(data);
     } catch (error) {
-        throw parseApiError(error, "Payme checkout ochib bo‘lmadi.");
+        throw parseApiError(error, "Top-up order yaratilmadi.");
     }
 };
 
