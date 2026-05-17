@@ -1,16 +1,15 @@
-import {useMutation, useQueries, useQuery, useQueryClient} from "@tanstack/react-query";
+import {useMutation, useQuery, useQueryClient} from "@tanstack/react-query";
 import {
     createTrackingLink,
     deleteTrackingLink,
     getCourseTrackingAnalytics,
     getCourseTrackingLinks,
     getTrackingLinkAnalytics,
-    getTrackingLink,
+    getSourceTrackingAnalytics,
     updateTrackingLink,
 } from "./trackingLinkApi.ts";
 import {
-    TrackingLink,
-    TrackingLinkCreateRequest,
+    TrackingSourceType,
     TrackingLinkUpdateRequest,
 } from "../../types/types.ts";
 import {showErrorToast, showSuccessToast} from "../../utils/toast.tsx";
@@ -20,6 +19,9 @@ const trackingLinksKey = (courseId: string) =>
 
 const trackingLinksAnalyticsKey = (courseId: string) =>
     ["tracking-links-analytics", courseId] as const;
+
+const sourceTrackingAnalyticsKey = (courseId: string, sourceType?: TrackingSourceType | "ALL") =>
+    ["source-tracking-analytics", courseId, sourceType || "ALL"] as const;
 
 export const useTrackingLinks = (courseId: string, page = 0, size = 20) =>
     useQuery({
@@ -35,31 +37,25 @@ export const useCourseTrackingAnalytics = (courseId: string) =>
         enabled: !!courseId,
     });
 
-export const useTrackingLink = (id?: string, enabled = true) =>
+export const useSourceTrackingAnalytics = (
+    courseId: string,
+    sourceType?: TrackingSourceType | "ALL",
+) =>
     useQuery({
-        queryKey: ["tracking-link", id],
-        queryFn: () => getTrackingLink(id || ""),
-        enabled: !!id && enabled,
-    });
-
-export const useTrackingLinksAnalytics = (links: TrackingLink[]) =>
-    useQueries({
-        queries: links.map((link) => ({
-            queryKey: ["tracking-link-analytics", link.id],
-            queryFn: () => getTrackingLinkAnalytics(link.id),
-            enabled: !!link.id,
-            staleTime: 1000 * 30,
-        })),
+        queryKey: sourceTrackingAnalyticsKey(courseId, sourceType),
+        queryFn: () => getSourceTrackingAnalytics(courseId, sourceType),
+        enabled: !!courseId,
     });
 
 export const useCreateTrackingLink = (courseId: string) => {
     const queryClient = useQueryClient();
 
     return useMutation({
-        mutationFn: (body: TrackingLinkCreateRequest) => createTrackingLink(courseId, body),
+        mutationFn: createTrackingLink,
         onSuccess: async () => {
             await queryClient.invalidateQueries({queryKey: trackingLinksKey(courseId)});
             await queryClient.invalidateQueries({queryKey: trackingLinksAnalyticsKey(courseId)});
+            await queryClient.invalidateQueries({queryKey: sourceTrackingAnalyticsKey(courseId)});
             showSuccessToast("Tracking link yaratildi.");
         },
         onError: (error) => {
@@ -74,11 +70,10 @@ export const useUpdateTrackingLink = (courseId: string) => {
     return useMutation({
         mutationFn: ({id, body}: { id: string; body: TrackingLinkUpdateRequest }) =>
             updateTrackingLink(id, body),
-        onSuccess: async (_, variables) => {
+        onSuccess: async () => {
             await queryClient.invalidateQueries({queryKey: trackingLinksKey(courseId)});
             await queryClient.invalidateQueries({queryKey: trackingLinksAnalyticsKey(courseId)});
-            await queryClient.invalidateQueries({queryKey: ["tracking-link", variables.id]});
-            await queryClient.invalidateQueries({queryKey: ["tracking-link-analytics", variables.id]});
+            await queryClient.invalidateQueries({queryKey: sourceTrackingAnalyticsKey(courseId)});
             showSuccessToast("Tracking link yangilandi.");
         },
         onError: (error) => {
@@ -92,11 +87,10 @@ export const useDeleteTrackingLink = (courseId: string) => {
 
     return useMutation({
         mutationFn: (id: string) => deleteTrackingLink(id),
-        onSuccess: async (_, id) => {
+        onSuccess: async () => {
             await queryClient.invalidateQueries({queryKey: trackingLinksKey(courseId)});
             await queryClient.invalidateQueries({queryKey: trackingLinksAnalyticsKey(courseId)});
-            queryClient.removeQueries({queryKey: ["tracking-link", id]});
-            queryClient.removeQueries({queryKey: ["tracking-link-analytics", id]});
+            await queryClient.invalidateQueries({queryKey: sourceTrackingAnalyticsKey(courseId)});
             showSuccessToast("Tracking link o'chirildi.");
         },
         onError: (error) => {
@@ -104,3 +98,10 @@ export const useDeleteTrackingLink = (courseId: string) => {
         },
     });
 };
+
+export const useTrackingLinkAnalytics = (id?: string, enabled = true) =>
+    useQuery({
+        queryKey: ["tracking-link-analytics", id],
+        queryFn: () => getTrackingLinkAnalytics(id || ""),
+        enabled: !!id && enabled,
+    });

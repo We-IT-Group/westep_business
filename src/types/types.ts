@@ -151,6 +151,7 @@ export interface Lesson extends Common {
 }
 
 export type TrackingOwnerType = "TEACHER" | "BUSINESS_OWNER";
+export type TrackingSourceType = "BUSINESS_LINK" | "WESTEP_LANDING" | "WESTEP_ADS" | "TEACHER_LINK";
 
 export interface TrackingLinkAnalytics {
     clicks: number;
@@ -161,6 +162,7 @@ export interface TrackingLinkAnalytics {
     freeEnrolls?: number;
     paidAmount?: number;
     appliedFeeAmount?: number;
+    netAmount?: number;
     failedOrAbandoned: number;
     refunded: number;
     refundedAmount?: number;
@@ -174,12 +176,15 @@ export interface TrackingLink extends Common {
     name: string;
     code: string;
     trackingUrl?: string;
+    landingUrlWithRef?: string;
+    studentUrlWithRef?: string;
     courseUrlWithRef?: string;
     isActive: boolean;
     expiresAt?: string | null;
     ownerType: TrackingOwnerType;
     ownerId: string;
-    destinationUrl: string;
+    sourceType?: TrackingSourceType;
+    destinationUrl?: string;
     utmSource?: string | null;
     utmMedium?: string | null;
     utmCampaign?: string | null;
@@ -187,19 +192,20 @@ export interface TrackingLink extends Common {
 }
 
 export interface TrackingLinkPayload {
+    courseId: string;
     name: string;
     ownerType: TrackingOwnerType;
     ownerId: string;
-    destinationUrl: string;
-    utmSource?: string;
-    utmMedium?: string;
-    utmCampaign?: string;
-    expiresAt?: string | null;
+    sourceType: TrackingSourceType;
 }
 
 export type TrackingLinkResponse = TrackingLink;
 export type TrackingLinkCreateRequest = TrackingLinkPayload;
-export type TrackingLinkUpdateRequest = Partial<TrackingLinkPayload & { isActive: boolean }>;
+export type TrackingLinkUpdateRequest = Partial<{
+    name: string;
+    isActive: boolean;
+    sourceType: TrackingSourceType;
+}>;
 export type TrackingLinkAnalyticsResponse = TrackingLinkAnalytics;
 export type CourseTrackingAnalyticsResponse = TrackingLinkAnalytics;
 

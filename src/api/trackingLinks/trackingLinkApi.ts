@@ -1,10 +1,12 @@
 import apiClient from "../apiClient.ts";
 import type {
     CourseTrackingAnalyticsResponse,
+    TrackingLink,
     TrackingLinkAnalyticsResponse,
     TrackingLinkCreateRequest,
     TrackingLinkResponse,
     TrackingLinkUpdateRequest,
+    TrackingSourceType,
 } from "../../types/types.ts";
 import {parseApiError} from "../../utils/apiError.ts";
 
@@ -16,6 +18,12 @@ interface TrackingLinksResponse {
     totalPages?: number;
     number?: number;
     size?: number;
+}
+
+interface TrackingAnalyticsResponse {
+    content?: Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse>>;
+    items?: Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse>>;
+    data?: Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse>>;
 }
 
 export interface TrackingLinkListResponse {
@@ -35,6 +43,7 @@ const emptyAnalytics: TrackingLinkAnalyticsResponse = {
     freeEnrolls: 0,
     paidAmount: 0,
     appliedFeeAmount: 0,
+    netAmount: 0,
     failedOrAbandoned: 0,
     refunded: 0,
     refundedAmount: 0,
@@ -76,9 +85,22 @@ const normalizeAnalytics = (
     ...data,
 });
 
-export const createTrackingLink = async (courseId: string, body: TrackingLinkCreateRequest) => {
+const normalizeAnalyticsLinks = (
+    response: TrackingAnalyticsResponse | Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse>> | undefined,
+) => {
+    const items = Array.isArray(response)
+        ? response
+        : response?.content || response?.items || response?.data || [];
+
+    return items.map((item) => ({
+        ...(item as Partial<TrackingLink>),
+        ...normalizeAnalytics(item),
+    }));
+};
+
+export const createTrackingLink = async (body: TrackingLinkCreateRequest) => {
     try {
-        const {data} = await apiClient.post(`/course/${courseId}/tracking-links`, body);
+        const {data} = await apiClient.post("/admin/tracking-links", body);
         return data as TrackingLinkResponse;
     } catch (error) {
         throw parseApiError(error, "Tracking link yaratilmadi.");
@@ -87,8 +109,8 @@ export const createTrackingLink = async (courseId: string, body: TrackingLinkCre
 
 export const getCourseTrackingLinks = async (courseId: string, page = 0, size = 20) => {
     try {
-        const {data} = await apiClient.get(`/course/${courseId}/tracking-links`, {
-            params: {page, size},
+        const {data} = await apiClient.get("/admin/tracking-links", {
+            params: {courseId, page, size},
         });
         return normalizeTrackingLinksPage(data, page, size);
     } catch (error) {
@@ -96,18 +118,9 @@ export const getCourseTrackingLinks = async (courseId: string, page = 0, size = 
     }
 };
 
-export const getTrackingLink = async (id: string) => {
-    try {
-        const {data} = await apiClient.get(`/tracking-links/${id}`);
-        return data as TrackingLinkResponse;
-    } catch (error) {
-        throw parseApiError(error, "Tracking link topilmadi.");
-    }
-};
-
 export const updateTrackingLink = async (id: string, body: TrackingLinkUpdateRequest) => {
     try {
-        const {data} = await apiClient.put(`/tracking-links/${id}`, body);
+        const {data} = await apiClient.patch(`/tracking-links/${id}`, body);
         return data as TrackingLinkResponse;
     } catch (error) {
         throw parseApiError(error, "Tracking link yangilanmadi.");
@@ -133,9 +146,26 @@ export const getTrackingLinkAnalytics = async (id: string) => {
 
 export const getCourseTrackingAnalytics = async (courseId: string) => {
     try {
-        const {data} = await apiClient.get(`/course/${courseId}/tracking-links/analytics`);
+        const {data} = await apiClient.get(`/analytics/courses/${courseId}/attribution-summary`);
         return normalizeAnalytics(data);
     } catch (error) {
         throw parseApiError(error, "Course analytics yuklanmadi.");
+    }
+};
+
+export const getSourceTrackingAnalytics = async (
+    courseId: string,
+    sourceType?: TrackingSourceType | "ALL",
+) => {
+    try {
+        const params: {courseId: string; sourceType?: TrackingSourceType} = {courseId};
+        if (sourceType && sourceType !== "ALL") {
+            params.sourceType = sourceType;
+        }
+
+        const {data} = await apiClient.get("/analytics/links", {params});
+        return normalizeAnalyticsLinks(data);
+    } catch (error) {
+        throw parseApiError(error, "Source analytics yuklanmadi.");
     }
 };
