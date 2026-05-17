@@ -1,7 +1,6 @@
 import apiClient from "../apiClient.ts";
 import type {
     CourseTrackingAnalyticsResponse,
-    TrackingLink,
     TrackingLinkAnalyticsResponse,
     TrackingLinkCreateRequest,
     TrackingLinkResponse,
@@ -14,6 +13,8 @@ interface TrackingLinksResponse {
     content?: TrackingLinkResponse[];
     items?: TrackingLinkResponse[];
     data?: TrackingLinkResponse[];
+    page?: number;
+    totalItems?: number;
     totalElements?: number;
     totalPages?: number;
     number?: number;
@@ -21,9 +22,14 @@ interface TrackingLinksResponse {
 }
 
 interface TrackingAnalyticsResponse {
-    content?: Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse>>;
-    items?: Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse>>;
-    data?: Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse>>;
+    content?: Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse> & {linkId?: string; linkName?: string}>;
+    items?: Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse> & {linkId?: string; linkName?: string}>;
+    data?: Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse> & {linkId?: string; linkName?: string}>;
+}
+
+interface CourseAttributionSummaryResponse {
+    courseId?: string;
+    sources?: Array<Partial<TrackingLinkAnalyticsResponse> & {sourceType?: TrackingSourceType}>;
 }
 
 export interface TrackingLinkListResponse {
@@ -71,9 +77,9 @@ const normalizeTrackingLinksPage = (
 
     return {
         content,
-        totalElements: response?.totalElements ?? content.length,
+        totalElements: response?.totalItems ?? response?.totalElements ?? content.length,
         totalPages: response?.totalPages ?? (content.length > 0 ? 1 : 0),
-        number: response?.number ?? page,
+        number: response?.page ?? response?.number ?? page,
         size: response?.size ?? size,
     };
 };
@@ -86,16 +92,46 @@ const normalizeAnalytics = (
 });
 
 const normalizeAnalyticsLinks = (
-    response: TrackingAnalyticsResponse | Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse>> | undefined,
+    response:
+        | TrackingAnalyticsResponse
+        | Array<Partial<TrackingLinkResponse> & Partial<TrackingLinkAnalyticsResponse> & {linkId?: string; linkName?: string}>
+        | undefined,
 ) => {
     const items = Array.isArray(response)
         ? response
         : response?.content || response?.items || response?.data || [];
 
     return items.map((item) => ({
-        ...(item as Partial<TrackingLink>),
+        id: item.linkId || item.id || "",
+        name: item.linkName || item.name || "",
+        code: item.code || "",
+        sourceType: item.sourceType,
         ...normalizeAnalytics(item),
     }));
+};
+
+const normalizeCourseSummary = (data: CourseAttributionSummaryResponse | Partial<CourseTrackingAnalyticsResponse> | undefined) => {
+    if (data && typeof data === "object" && "sources" in data && Array.isArray(data.sources)) {
+        return data.sources.reduce<TrackingLinkAnalyticsResponse>(
+            (accumulator, item) => ({
+                ...accumulator,
+                clicks: accumulator.clicks + (item.clicks || 0),
+                uniqueClicks: accumulator.uniqueClicks + (item.uniqueClicks || 0),
+                leads: accumulator.leads + (item.leads || 0),
+                checkoutStarted: accumulator.checkoutStarted + (item.checkoutStarted || 0),
+                paidPurchases: accumulator.paidPurchases + (item.paidPurchases || 0),
+                freeEnrolls: (accumulator.freeEnrolls || 0) + (item.freeEnrolls || 0),
+                paidAmount: (accumulator.paidAmount || 0) + (item.paidAmount || 0),
+                appliedFeeAmount: (accumulator.appliedFeeAmount || 0) + (item.appliedFeeAmount || 0),
+                netAmount: (accumulator.netAmount || 0) + (item.netAmount || 0),
+                refunded: accumulator.refunded + (item.refunded || 0),
+                refundedAmount: (accumulator.refundedAmount || 0) + (item.refundedAmount || 0),
+            }),
+            {...emptyAnalytics},
+        );
+    }
+
+    return normalizeAnalytics(data as Partial<CourseTrackingAnalyticsResponse> | undefined);
 };
 
 export const createTrackingLink = async (body: TrackingLinkCreateRequest) => {
@@ -147,7 +183,7 @@ export const getTrackingLinkAnalytics = async (id: string) => {
 export const getCourseTrackingAnalytics = async (courseId: string) => {
     try {
         const {data} = await apiClient.get(`/analytics/courses/${courseId}/attribution-summary`);
-        return normalizeAnalytics(data);
+        return normalizeCourseSummary(data);
     } catch (error) {
         throw parseApiError(error, "Course analytics yuklanmadi.");
     }
