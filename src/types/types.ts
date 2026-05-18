@@ -71,6 +71,20 @@ export interface BusinessWalletSummary {
     salesBlocked?: boolean;
 }
 
+export interface BusinessWalletTopUpTransaction {
+    transactionId: string;
+    orderId?: string;
+    amount: number;
+    currency?: string;
+    provider?: string;
+    status?: string;
+    balanceBefore: number;
+    balanceAfter: number;
+    description?: string;
+    paidAt?: string;
+    createdAt?: string;
+}
+
 export interface BusinessWalletTransaction {
     transactionId: string;
     orderId?: string;

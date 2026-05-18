@@ -18,14 +18,14 @@ const isPaidTransaction = (status?: string) => {
 export default function Sales() {
     const [search, setSearch] = useState("");
     const transactionsQuery = useBusinessWalletTransactions();
-    const paidTransactions = useMemo(
-        () => (transactionsQuery.data || []).filter((transaction) => isPaidTransaction(transaction.status)),
+    const allTransactions = useMemo(
+        () => transactionsQuery.data || [],
         [transactionsQuery.data],
     );
 
     const filteredTransactions = useMemo(() => {
         const query = search.trim().toLowerCase();
-        const transactions = paidTransactions;
+        const transactions = allTransactions;
 
         if (!query) {
             return transactions;
@@ -38,12 +38,12 @@ export default function Sales() {
             const orderMatched = (transaction.orderId || "").toLowerCase().includes(query);
             return titleMatched || phoneMatched || statusMatched || orderMatched;
         });
-    }, [search, paidTransactions]);
+    }, [search, allTransactions]);
 
     const totals = useMemo(() => {
         return filteredTransactions.reduce(
             (accumulator, transaction) => ({
-                amount: accumulator.amount + transaction.amount,
+                amount: accumulator.amount + (isPaidTransaction(transaction.status) ? transaction.amount : 0),
                 completed: accumulator.completed + (isPaidTransaction(transaction.status) ? 1 : 0),
             }),
             {amount: 0, completed: 0},
@@ -110,7 +110,6 @@ export default function Sales() {
                     <BusinessWalletTransactionsFilters
                         search={search}
                         onSearchChange={setSearch}
-                        totalCount={filteredTransactions.length}
                     />
                 </div>
 
@@ -159,7 +158,7 @@ export default function Sales() {
                             <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-500 dark:text-slate-400">
                                 {search.trim()
                                     ? "Qidiruvga mos telefon, status yoki buyurtma topilmadi."
-                                    : "Business wallet bo‘yicha hali to‘langan tranzaksiya yo‘q."}
+                                    : "Business wallet bo‘yicha hali tranzaksiya yo‘q."}
                             </p>
                         </div>
                     </div>

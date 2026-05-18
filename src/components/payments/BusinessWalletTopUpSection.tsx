@@ -7,10 +7,12 @@ import Button from "../ui/button/Button.tsx";
 import {useBusinessWalletTopUpCheckout} from "../../api/payments/useBusinessWalletPayments.ts";
 import type {BusinessWalletTopUpCheckoutRequest} from "../../types/types.ts";
 import {showSuccessToast} from "../../utils/toast.tsx";
+import BusinessWalletTopUpHistory from "./BusinessWalletTopUpHistory.tsx";
 
 interface BusinessWalletTopUpSectionProps {
     defaultPhoneNumber?: string;
     variant?: "default" | "hero";
+    showHistory?: boolean;
 }
 
 interface BusinessWalletTopUpFormValues extends Record<string, unknown> {
@@ -28,6 +30,7 @@ const amountPresets = [100000, 300000, 500000, 1000000];
 export default function BusinessWalletTopUpSection({
     defaultPhoneNumber,
     variant = "default",
+    showHistory = variant === "default",
 }: BusinessWalletTopUpSectionProps) {
     const checkoutMutation = useBusinessWalletTopUpCheckout();
     const isHero = variant === "hero";
@@ -142,10 +145,6 @@ export default function BusinessWalletTopUpSection({
                             ))}
                         </div>
 
-                        <div className="rounded-[24px] border border-amber-100 bg-amber-50/80 p-4 text-sm font-medium leading-6 text-amber-900 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-100">
-                            Hozircha current balance uchun alohida endpoint ulanmagan. Bu bo‘lim faqat checkoutga o‘tish oqimini bajaradi.
-                        </div>
-
                         <Button
                             type="submit"
                             className="w-full rounded-2xl px-6 py-4 text-base font-semibold md:w-auto"
@@ -161,6 +160,12 @@ export default function BusinessWalletTopUpSection({
                         </Button>
                     </form>
                 </div>
+
+                {showHistory ? (
+                    <div className="mt-6">
+                        <BusinessWalletTopUpHistory/>
+                    </div>
+                ) : null}
             </div>
         </section>
     );

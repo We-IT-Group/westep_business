@@ -31,9 +31,14 @@ type BusinessWalletTransactionsTableProps = {
 export default function BusinessWalletTransactionsTable({transactions}: BusinessWalletTransactionsTableProps) {
     return (
         <div className="hidden overflow-x-auto lg:block">
-            <div className="min-w-[1340px]">
-                <div className="grid grid-cols-[1.6fr_1.4fr_1.3fr_1fr_1fr_1fr_1.1fr] gap-4 border-b border-slate-200 px-6 py-5 text-sm font-semibold text-slate-700 dark:border-slate-800 dark:text-slate-200">
-                    <div>Student</div>
+            <div className="min-w-[1340px] px-4 pb-6">
+                <div className="grid grid-cols-[1.6fr_1.2fr_1.3fr_0.9fr_0.9fr_0.9fr_1.1fr] gap-4 border-b border-slate-200 px-2 py-5 text-sm font-semibold text-slate-700 dark:border-slate-800 dark:text-slate-200">
+                    <div className="flex items-center gap-3">
+                        <span>Student</span>
+                        <span className="inline-flex h-10 min-w-10 items-center justify-center rounded-full bg-slate-900 text-lg font-semibold text-white dark:bg-white dark:text-slate-950">
+                            {transactions.length}
+                        </span>
+                    </div>
                     <div>Kurs</div>
                     <div>Modullar</div>
                     <div>Sotuv</div>
@@ -42,11 +47,11 @@ export default function BusinessWalletTransactionsTable({transactions}: Business
                     <div>To‘langan vaqt</div>
                 </div>
 
-                <div className="space-y-3 px-4 py-4">
+                <div className="space-y-2 pt-2">
                     {transactions.map((transaction) => (
                         <div
                             key={transaction.transactionId}
-                            className="grid grid-cols-[1.6fr_1.4fr_1.3fr_1fr_1fr_1fr_1.1fr] gap-4 rounded-[22px] border border-slate-200 bg-white/80 px-5 py-5 shadow-sm transition hover:-translate-y-0.5 hover:border-slate-300 hover:bg-white hover:shadow-[0_18px_45px_rgba(15,23,42,0.08)] dark:border-slate-800 dark:bg-slate-900/70 dark:hover:border-slate-700 dark:hover:bg-slate-900"
+                            className="grid w-full grid-cols-[1.6fr_1.2fr_1.3fr_0.9fr_0.9fr_0.9fr_1.1fr] gap-4 rounded-2xl px-2 py-6 text-left transition hover:bg-white/70 dark:hover:bg-white/[0.03]"
                         >
                             <div className="min-w-0">
                                 <div className="truncate text-lg font-semibold tracking-tight text-slate-950 dark:text-slate-100">
