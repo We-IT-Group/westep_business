@@ -13,10 +13,15 @@ interface BusinessWalletTopUpSectionProps {
     variant?: "default" | "hero";
 }
 
-type BusinessWalletTopUpFormValues = BusinessWalletTopUpCheckoutRequest & Record<string, unknown>;
+interface BusinessWalletTopUpFormValues extends Record<string, unknown> {
+    phoneNumber: string;
+    amount: string;
+}
 
 const formatMoney = (value: number) =>
-    `${new Intl.NumberFormat("uz-UZ").format(Math.round(value))} so‘m`;
+    `${Math.round(value)
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} so‘m`;
 
 const amountPresets = [100000, 300000, 500000, 1000000];
 
@@ -31,19 +36,23 @@ export default function BusinessWalletTopUpSection({
         enableReinitialize: true,
         initialValues: {
             phoneNumber: defaultPhoneNumber || "",
-            amount: 100000,
+            amount: "100000",
         },
         validationSchema: Yup.object({
             phoneNumber: Yup.string()
                 .required("Telefon raqamini kiriting.")
                 .matches(/^998\d{9}$/, "Telefon raqamini +998770440105 yoki 998770440105 formatda kiriting."),
-            amount: Yup.number()
-                .typeError("Summani to‘g‘ri kiriting.")
+            amount: Yup.string()
                 .required("Summani kiriting.")
-                .min(1000, "Summa kamida 1 000 so‘m bo‘lishi kerak."),
+                .matches(/^\d+$/, "Summani to‘g‘ri kiriting.")
+                .test("min-amount", "Summa kamida 1 000 so‘m bo‘lishi kerak.", (value) => Number(value || 0) >= 1000),
         }),
         onSubmit: async (values) => {
-            const response = await checkoutMutation.mutateAsync(values);
+            const payload: BusinessWalletTopUpCheckoutRequest = {
+                phoneNumber: values.phoneNumber,
+                amount: Number(values.amount),
+            };
+            const response = await checkoutMutation.mutateAsync(payload);
             showSuccessToast("Payme sahifasiga yo‘naltirilmoqda");
             window.location.href = response.checkoutUrl;
         },
@@ -100,7 +109,7 @@ export default function BusinessWalletTopUpSection({
                                     step={1000}
                                     value={formik.values.amount}
                                     onChange={(event) => {
-                                        formik.setFieldValue("amount", Number(event.target.value));
+                                        formik.setFieldValue("amount", event.target.value.replace(/[^\d]/g, ""));
                                     }}
                                     onBlur={formik.handleBlur}
                                     className="h-[54px] w-full rounded-full border border-slate-300 bg-white px-5 text-lg font-semibold text-slate-900 outline-none transition focus:border-blue-400 focus:ring-2 focus:ring-blue-100 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100 dark:focus:border-blue-500 dark:focus:ring-blue-500/20"
@@ -121,9 +130,9 @@ export default function BusinessWalletTopUpSection({
                                 <button
                                     key={amount}
                                     type="button"
-                                    onClick={() => formik.setFieldValue("amount", amount)}
+                                    onClick={() => formik.setFieldValue("amount", String(amount))}
                                     className={`rounded-full border px-4 py-2 text-sm font-semibold transition ${
-                                        Number(formik.values.amount) === amount
+                                        Number(formik.values.amount || 0) === amount
                                             ? "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-950"
                                             : "border-slate-200 bg-white text-slate-600 hover:border-slate-300 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
                                     }`}

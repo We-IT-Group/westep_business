@@ -7,7 +7,9 @@ import {User, Settings, Shield, LifeBuoy, LogOut, ChevronDown, Wallet} from "luc
 import {useBusinessWallet} from "../../api/payments/useBusinessWallet.ts";
 
 const formatMoney = (value: number) =>
-    `${new Intl.NumberFormat("uz-UZ").format(Math.round(value))} so‘m`;
+    `${Math.round(value)
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, " ")} so‘m`;
 
 export default function UserDropdown() {
     const {data: user} = useUser();

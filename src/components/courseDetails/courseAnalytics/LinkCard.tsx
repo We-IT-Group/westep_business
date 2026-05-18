@@ -3,7 +3,7 @@ import {Button} from "../../ui/button.tsx";
 import CopyUrlsRow from "./CopyUrlsRow.tsx";
 import LinkStatsPanel from "./LinkStatsPanel.tsx";
 import type {CopyUrlItem, CourseAnalyticsLink, LinkStats} from "./types.ts";
-import {getBadgeStyle, getPricingLabel, getSourceLabel} from "./utils.ts";
+import {analyticsOnlySourceTypes, getBadgeStyle, getPricingLabel, getSourceLabel} from "./utils.ts";
 
 function LinkCard({
     link,
@@ -19,6 +19,7 @@ function LinkCard({
     onViewAnalytics?: (linkId: string) => void;
 }) {
     const isTeacherLink = link.sourceType === "TEACHER_LINK";
+    const isAnalyticsOnly = !!link.sourceType && analyticsOnlySourceTypes.includes(link.sourceType);
     const pricingLabel = getPricingLabel(stats);
     const copyItems: CopyUrlItem[] = [
         {
@@ -43,7 +44,7 @@ function LinkCard({
 
     return (
         <article className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-all duration-150 hover:-translate-y-0.5 hover:shadow-md">
-            <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
+            <div className={`flex flex-col gap-5 ${isAnalyticsOnly ? "" : "lg:flex-row lg:items-start lg:justify-between"}`}>
                 <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
                         <span className={`rounded-md px-2.5 py-1 text-xs font-semibold ${getBadgeStyle(link.ownerType)}`}>
@@ -62,14 +63,24 @@ function LinkCard({
                         Kod: {link.code}
                     </div>
 
-                    <div className="mt-5">
-                        <CopyUrlsRow items={copyItems}/>
-                    </div>
+                    {isAnalyticsOnly ? null : (
+                        <div className="mt-5">
+                            <CopyUrlsRow items={copyItems}/>
+                        </div>
+                    )}
+
+                    {isAnalyticsOnly ? (
+                        <div className="mt-5">
+                            <LinkStatsPanel stats={stats} compact/>
+                        </div>
+                    ) : null}
                 </div>
 
-                <div className="w-full lg:max-w-[420px]">
-                    <LinkStatsPanel stats={stats}/>
-                </div>
+                {!isAnalyticsOnly ? (
+                    <div className="w-full lg:max-w-[420px]">
+                        <LinkStatsPanel stats={stats}/>
+                    </div>
+                ) : null}
             </div>
 
             <div className="mt-5 flex flex-wrap gap-2">

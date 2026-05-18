@@ -9,6 +9,7 @@ export const sourceTypeOptions: Array<{value: TrackingSourceType; label: string}
 ];
 
 export const defaultSourceTypes: TrackingSourceType[] = ["BUSINESS_LINK", "WESTEP_LANDING", "WESTEP_ADS"];
+export const analyticsOnlySourceTypes: TrackingSourceType[] = ["WESTEP_LANDING", "WESTEP_ADS"];
 
 export const analyticsLabels: Array<{label: string; key: keyof TrackingLinkAnalytics; money?: boolean}> = [
     {label: "Bosishlar", key: "clicks"},
@@ -24,8 +25,13 @@ export const analyticsLabels: Array<{label: string; key: keyof TrackingLinkAnaly
     {label: "Qaytarilgan summa", key: "refundedAmount", money: true},
 ];
 
+const formatGroupedNumber = (value?: number): string =>
+    Math.round(value || 0)
+        .toString()
+        .replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+
 export const formatMoney = (amount?: number): string =>
-    `${new Intl.NumberFormat("uz-UZ").format(Math.round(amount || 0))} so'm`;
+    `${formatGroupedNumber(amount)} so'm`;
 
 export const getSourceLabel = (sourceType?: TrackingSourceType) =>
     sourceTypeOptions.find((option) => option.value === sourceType)?.label || "Belgilanmagan";
