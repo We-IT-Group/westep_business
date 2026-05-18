@@ -8,15 +8,24 @@ import BusinessWalletTransactionsCardList from "../../components/payments/Busine
 import BusinessWalletTransactionsTable from "../../components/payments/BusinessWalletTransactionsTable.tsx";
 
 const formatMoney = (value: number) =>
-    `${new Intl.NumberFormat("uz-UZ").format(Math.round(value))} so‘m`;
+    `${Math.round(value).toLocaleString("fr-FR")} so‘m`;
+
+const isPaidTransaction = (status?: string) => {
+    const normalized = (status || "").toUpperCase();
+    return normalized.includes("SUCCESS") || normalized.includes("PAID") || normalized.includes("COMPLETED");
+};
 
 export default function Sales() {
     const [search, setSearch] = useState("");
     const transactionsQuery = useBusinessWalletTransactions();
+    const paidTransactions = useMemo(
+        () => (transactionsQuery.data || []).filter((transaction) => isPaidTransaction(transaction.status)),
+        [transactionsQuery.data],
+    );
 
     const filteredTransactions = useMemo(() => {
         const query = search.trim().toLowerCase();
-        const transactions = transactionsQuery.data || [];
+        const transactions = paidTransactions;
 
         if (!query) {
             return transactions;
@@ -29,13 +38,13 @@ export default function Sales() {
             const orderMatched = (transaction.orderId || "").toLowerCase().includes(query);
             return titleMatched || phoneMatched || statusMatched || orderMatched;
         });
-    }, [search, transactionsQuery.data]);
+    }, [search, paidTransactions]);
 
     const totals = useMemo(() => {
         return filteredTransactions.reduce(
             (accumulator, transaction) => ({
                 amount: accumulator.amount + transaction.amount,
-                completed: accumulator.completed + (((transaction.status || "").toUpperCase().includes("SUCCESS") || (transaction.status || "").toUpperCase().includes("PAID")) ? 1 : 0),
+                completed: accumulator.completed + (isPaidTransaction(transaction.status) ? 1 : 0),
             }),
             {amount: 0, completed: 0},
         );
@@ -150,7 +159,7 @@ export default function Sales() {
                             <p className="mx-auto mt-3 max-w-xl text-sm leading-7 text-slate-500 dark:text-slate-400">
                                 {search.trim()
                                     ? "Qidiruvga mos telefon, status yoki buyurtma topilmadi."
-                                    : "Business wallet bo‘yicha hali tranzaksiya shakllanmagan."}
+                                    : "Business wallet bo‘yicha hali to‘langan tranzaksiya yo‘q."}
                             </p>
                         </div>
                     </div>

@@ -15,6 +15,7 @@ import {getItem, removeItem} from "../../utils/utils.ts";
 import {useToast} from "../../hooks/useToast.tsx";
 import {showErrorToast} from "../../utils/toast.tsx";
 import {getCurrentDeviceMeta} from "../../utils/device.ts";
+import type {BusinessType} from "../../types/types.ts";
 
 export const normalizeRoleName = (roleName?: string) => (roleName || "").toUpperCase();
 
@@ -42,6 +43,36 @@ export const isLessonQuizManagerRole = (roleName?: string) =>
 export const isWorkspaceUserRole = (roleName?: string) =>
     isLessonQuizManagerRole(roleName) || isStudentRole(roleName);
 
+const resolveLoginRedirect = (roleName?: string) =>
+    isTeacherSideRole(roleName) ? "/" : "/courses";
+
+const completeLoginFlow = async ({
+    navigate,
+    toast,
+}: {
+    navigate: ReturnType<typeof useNavigate>;
+    toast: ReturnType<typeof useToast>;
+}) => {
+    try {
+        const user = await getCurrentUser();
+
+        if (!isWorkspaceUserRole(user?.roleName)) {
+            removeItem("accessToken");
+            removeItem("refreshToken");
+            toast.error("Bu panelga ruxsat berilgan rol bilan kiring.");
+            navigate("/login", {replace: true});
+            return;
+        }
+
+        navigate(resolveLoginRedirect(user?.roleName), {replace: true});
+    } catch (error) {
+        removeItem("accessToken");
+        removeItem("refreshToken");
+        toast.error(error instanceof Error ? error.message : "Login amalga oshmadi.");
+        navigate("/login", {replace: true});
+    }
+};
+
 export const useUser = () =>
     useQuery({
         queryKey: ["currentUser"],
@@ -63,24 +94,7 @@ export const useLogin = () => {
     return useMutation({
         mutationFn: login,
         onSuccess: async () => {
-            try {
-                const user = await getCurrentUser();
-
-                if (!isWorkspaceUserRole(user?.roleName)) {
-                    removeItem("accessToken");
-                    removeItem("refreshToken");
-                    toast.error("Bu panelga ruxsat berilgan rol bilan kiring.");
-                    navigate("/login", {replace: true});
-                    return;
-                }
-
-                navigate(isTeacherSideRole(user?.roleName) ? "/" : "/courses", {replace: true});
-            } catch (error) {
-                removeItem("accessToken");
-                removeItem("refreshToken");
-                toast.error(error instanceof Error ? error.message : "Login amalga oshmadi.");
-                navigate("/login", {replace: true});
-            }
+            await completeLoginFlow({navigate, toast});
         },
         onError: (error: Error) => {
             if (error instanceof DeviceLimitExceededError) {
@@ -116,11 +130,27 @@ export const useDeviceAwareLogin = () => {
 
 export const useRegister = () => {
     const navigate = useNavigate();
+    const toast = useToast();
     return useMutation({
         mutationFn: register,
-        onSuccess: () => {
-            navigate("/success");
-            sessionStorage.removeItem("form");
+        onSuccess: async (_, body: BusinessType) => {
+            try {
+                const deviceMeta = getCurrentDeviceMeta();
+
+                await login({
+                    phone: body.phone,
+                    password: body.password,
+                    deviceId: deviceMeta.deviceId,
+                    deviceName: deviceMeta.deviceName,
+                });
+
+                sessionStorage.removeItem("form");
+                await completeLoginFlow({navigate, toast});
+            } catch (error) {
+                sessionStorage.removeItem("form");
+                showErrorToast(error, "Ro'yxatdan o'tildi, lekin avtomatik kirish amalga oshmadi");
+                navigate("/login", {replace: true});
+            }
         },
         onError: (error) => {
             showErrorToast(error, "Ro'yxatdan o'tib bo'lmadi");
