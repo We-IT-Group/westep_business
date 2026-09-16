@@ -73,8 +73,6 @@ function UpdateCourse({data, open, onClose}: UpdateCourseProps) {
         enableReinitialize: true,
         validationSchema: Yup.object({
             name: Yup.string().trim().required("Kurs nomini kiriting"),
-            primaryCategoryId: Yup.string().required("Kategoriya tanlang"),
-            subcategoryId: Yup.string().required("Subkategoriya tanlang"),
             description: Yup.string().trim().required("Qisqa tavsif kiriting").max(500, "Qisqa tavsif juda uzun"),
             fullDescription: Yup.string().max(5000, "To‘liq tavsif juda uzun"),
             languageId: Yup.string().required("Kurs tilini tanlang"),
@@ -97,8 +95,8 @@ function UpdateCourse({data, open, onClose}: UpdateCourseProps) {
                 await updateCourse({
                     id: data.id,
                     name: values.name.trim(),
-                    primaryCategoryId: values.primaryCategoryId,
-                    subcategoryId: values.subcategoryId,
+                    primaryCategoryId: values.primaryCategoryId || undefined,
+                    subcategoryId: values.subcategoryId || undefined,
                     description: values.description.trim(),
                     fullDescription: values.fullDescription.trim(),
                     skillTagIds: values.skillTagIds,
@@ -229,7 +227,7 @@ function UpdateCourse({data, open, onClose}: UpdateCourseProps) {
                                     </div>
 
                                     <div className={formSectionClass}>
-                                        <label className={labelClass}>Kategoriya</label>
+                                        <label className={labelClass}>Kategoriya (ixtiyoriy)</label>
                                         <select
                                             id="primaryCategoryId"
                                             name="primaryCategoryId"
@@ -252,7 +250,7 @@ function UpdateCourse({data, open, onClose}: UpdateCourseProps) {
                                     </div>
 
                                     <div className={formSectionClass}>
-                                        <label className={labelClass}>Subkategoriya</label>
+                                        <label className={labelClass}>Subkategoriya (ixtiyoriy)</label>
                                         <select
                                             id="subcategoryId"
                                             name="subcategoryId"

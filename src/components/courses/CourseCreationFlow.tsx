@@ -79,8 +79,6 @@ export function CourseCreationFlow({open, onClose, onComplete}: CourseCreationFl
         },
         validationSchema: Yup.object({
             name: Yup.string().trim().required("Kurs nomini kiriting"),
-            primaryCategoryId: Yup.string().required("Kategoriya tanlang"),
-            subcategoryId: Yup.string().required("Subkategoriya tanlang"),
             description: Yup.string().trim().required("Qisqa tavsif kiriting").max(500, "Qisqa tavsif juda uzun"),
             fullDescription: Yup.string().max(5000, "To‘liq tavsif juda uzun"),
             languageId: Yup.string().required("Kurs tilini tanlang"),
@@ -103,8 +101,8 @@ export function CourseCreationFlow({open, onClose, onComplete}: CourseCreationFl
 
                 const createdCourse = await addCourse({
                     name: formik.values.name.trim(),
-                    primaryCategoryId: formik.values.primaryCategoryId,
-                    subcategoryId: formik.values.subcategoryId,
+                    primaryCategoryId: formik.values.primaryCategoryId || undefined,
+                    subcategoryId: formik.values.subcategoryId || undefined,
                     description: formik.values.description.trim(),
                     fullDescription: formik.values.fullDescription.trim(),
                     skillTagIds: formik.values.skillTagIds,
@@ -156,16 +154,12 @@ export function CourseCreationFlow({open, onClose, onComplete}: CourseCreationFl
         if (step === 1) {
             formik.setTouched({
                 name: true,
-                primaryCategoryId: true,
-                subcategoryId: true,
                 description: true,
                 languageId: true,
                 trailerVideoUrl: true,
             });
             const hasRequiredFields =
                 formik.values.name.trim()
-                && formik.values.primaryCategoryId
-                && formik.values.subcategoryId
                 && formik.values.description.trim()
                 && formik.values.languageId
                 && isYoutubeUrl(formik.values.trailerVideoUrl);
@@ -255,7 +249,7 @@ export function CourseCreationFlow({open, onClose, onComplete}: CourseCreationFl
                                         </div>
 
                                         <div className={formSectionClass}>
-                                            <label className={labelClass}>Kategoriya</label>
+                                            <label className={labelClass}>Kategoriya (ixtiyoriy)</label>
                                             <select
                                                 id="primaryCategoryId"
                                                 name="primaryCategoryId"
@@ -278,7 +272,7 @@ export function CourseCreationFlow({open, onClose, onComplete}: CourseCreationFl
                                         </div>
 
                                         <div className={formSectionClass}>
-                                            <label className={labelClass}>Subkategoriya</label>
+                                            <label className={labelClass}>Subkategoriya (ixtiyoriy)</label>
                                             <select
                                                 id="subcategoryId"
                                                 name="subcategoryId"
