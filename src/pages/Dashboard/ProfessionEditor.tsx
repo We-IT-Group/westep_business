@@ -38,6 +38,9 @@ import {
     buildCourseOption,
     cloneDraft,
     createEmptyDraft,
+    HOLLAND_LETTERS,
+    STRENGTH_OPTIONS,
+    VALUE_OPTIONS,
     getFieldMeta,
     getToneMeta,
     getTranslationStatusLabel,
@@ -216,6 +219,9 @@ export default function ProfessionEditor() {
             level: uz.levelLabel,
             displayOrder: draft.displayOrder,
             recommendedFromAge: draft.recommendedFromAge,
+            hollandCode: draft.hollandCode || null,
+            strengthKeys: draft.strengthKeys,
+            valueKeys: draft.valueKeys,
             translations,
         };
 
@@ -584,6 +590,37 @@ export default function ProfessionEditor() {
                                     </p>
                                 </div>
 
+                                <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-slate-950">
+                                    <div>
+                                        <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Kasbga moslik profili</p>
+                                        <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                                            Qiziqish testi natijasi bilan solishtirib, bolaga "Senga N% mos" ko'rsatiladi.
+                                        </p>
+                                    </div>
+                                    <ChipPicker
+                                        label="Holland kodi — eng kuchlisidan boshlab, ko'pi bilan 3 ta"
+                                        options={HOLLAND_LETTERS}
+                                        selected={draft.hollandCode.split("").filter(Boolean)}
+                                        max={3}
+                                        ordered
+                                        onChange={(next) => setDraft((current) => ({ ...current, hollandCode: next.join("") }))}
+                                    />
+                                    <ChipPicker
+                                        label="Kerakli kuchli tomonlar — ko'pi bilan 3 ta"
+                                        options={STRENGTH_OPTIONS}
+                                        selected={draft.strengthKeys}
+                                        max={3}
+                                        onChange={(next) => setDraft((current) => ({ ...current, strengthKeys: next }))}
+                                    />
+                                    <ChipPicker
+                                        label="Mos qadriyatlar — ko'pi bilan 2 ta"
+                                        options={VALUE_OPTIONS}
+                                        selected={draft.valueKeys}
+                                        max={2}
+                                        onChange={(next) => setDraft((current) => ({ ...current, valueKeys: next }))}
+                                    />
+                                </div>
+
                                 <div className="flex items-center justify-between rounded-2xl border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-slate-950">
                                     <div>
                                         <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">
@@ -915,6 +952,55 @@ export default function ProfessionEditor() {
                     </button>
                 </div>
             </section>
+        </div>
+    );
+}
+
+function ChipPicker({
+    label,
+    options,
+    selected,
+    max,
+    ordered = false,
+    onChange,
+}: {
+    label: string;
+    options: Array<{ key: string; label: string }>;
+    selected: string[];
+    max: number;
+    ordered?: boolean;
+    onChange: (next: string[]) => void;
+}) {
+    const toggle = (key: string) => {
+        if (selected.includes(key)) onChange(selected.filter((item) => item !== key));
+        else if (selected.length < max) onChange([...selected, key]);
+    };
+    return (
+        <div className="space-y-2">
+            <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">{label}</p>
+            <div className="flex flex-wrap gap-2">
+                {options.map((option) => {
+                    const index = selected.indexOf(option.key);
+                    const active = index >= 0;
+                    return (
+                        <button
+                            key={option.key}
+                            type="button"
+                            aria-pressed={active}
+                            disabled={!active && selected.length >= max}
+                            onClick={() => toggle(option.key)}
+                            className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-40 ${
+                                active
+                                    ? "bg-blue-600 text-white"
+                                    : "bg-slate-100 text-slate-700 hover:bg-slate-200 dark:bg-slate-800 dark:text-slate-200"
+                            }`}
+                        >
+                            {ordered && active ? `${index + 1}. ` : ""}
+                            {option.label}
+                        </button>
+                    );
+                })}
+            </div>
         </div>
     );
 }

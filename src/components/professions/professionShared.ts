@@ -33,6 +33,9 @@ export type ProfessionDraft = {
     demandTone: ProfessionDemandTone;
     displayOrder: number;
     recommendedFromAge: number | null;
+    hollandCode: string;
+    strengthKeys: string[];
+    valueKeys: string[];
     active: boolean;
     translations: Record<SupportedLanguage, ProfessionTranslation>;
     courseIds: string[];
@@ -111,6 +114,9 @@ export const createEmptyDraft = (fields: FieldOption[], nextOrder: number): Prof
     demandTone: defaultTone,
     displayOrder: nextOrder,
     recommendedFromAge: null,
+    hollandCode: "",
+    strengthKeys: [],
+    valueKeys: [],
     active: true,
     translations: {
         uz: createTranslationDraft("uz"),
@@ -131,6 +137,9 @@ export const cloneDraft = (profession: Profession): ProfessionDraft => ({
     demandTone: profession.demandTone,
     displayOrder: profession.displayOrder,
     recommendedFromAge: profession.recommendedFromAge ?? null,
+    hollandCode: profession.hollandCode ?? "",
+    strengthKeys: profession.strengthKeys ?? [],
+    valueKeys: profession.valueKeys ?? [],
     active: profession.active,
     translations: {
         uz: profession.translations.find((item) => item.languageCode === "uz") || createTranslationDraft("uz"),
@@ -190,3 +199,31 @@ export const normalizeSlug = (value: string) =>
         .toLowerCase()
         .replace(/\s+/g, "-")
         .replace(/-+/g, "-");
+
+/** Kasbga moslik profili uchun tanlovlar (backend ProfessionFit bilan bir xil kalitlar). */
+export const HOLLAND_LETTERS: Array<{ key: string; label: string }> = [
+    { key: "R", label: "R — Qo'l mehnati" },
+    { key: "I", label: "I — Tadqiqot" },
+    { key: "A", label: "A — Ijod" },
+    { key: "S", label: "S — Odamlarga yordam" },
+    { key: "E", label: "E — Yetakchilik" },
+    { key: "C", label: "C — Tartib" },
+];
+
+export const STRENGTH_OPTIONS: Array<{ key: string; label: string }> = [
+    { key: "strength.logic", label: "Mantiqiy fikrlash" },
+    { key: "strength.creativity", label: "Ijodkorlik" },
+    { key: "strength.communication", label: "Muloqot" },
+    { key: "strength.teamwork", label: "Jamoada ishlash" },
+    { key: "strength.independence", label: "Mustaqillik" },
+    { key: "strength.focus", label: "Diqqat va sabr" },
+];
+
+export const VALUE_OPTIONS: Array<{ key: string; label: string }> = [
+    { key: "value.help", label: "Odamlarga foyda" },
+    { key: "value.creativity", label: "Yangi narsa yaratish" },
+    { key: "value.money", label: "Moddiy farovonlik" },
+    { key: "value.independence", label: "Erkinlik" },
+    { key: "value.recognition", label: "Tan olinish" },
+    { key: "value.stability", label: "Barqarorlik" },
+];

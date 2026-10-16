@@ -23,6 +23,9 @@ export type ProfessionCreateRequest = {
     level: string;
     displayOrder?: number;
     recommendedFromAge?: number | null;
+    hollandCode?: string | null;
+    strengthKeys?: string[];
+    valueKeys?: string[];
     translations: ProfessionTranslationPayload[];
 };
 
@@ -195,6 +198,10 @@ const normalizeProfession = (value: unknown): Profession | null => {
         duration: asString(record.duration),
         level: asString(record.level),
         displayOrder: asNumber(record.displayOrder),
+        recommendedFromAge: typeof record.recommendedFromAge === "number" ? record.recommendedFromAge : null,
+        hollandCode: typeof record.hollandCode === "string" ? record.hollandCode : null,
+        strengthKeys: Array.isArray(record.strengthKeys) ? (record.strengthKeys as string[]) : [],
+        valueKeys: Array.isArray(record.valueKeys) ? (record.valueKeys as string[]) : [],
         active: Boolean(record.active ?? true),
         deleted: Boolean(record.deleted),
         translations: translationsSource.map(normalizeTranslation).filter((item): item is ProfessionTranslation => Boolean(item)),
