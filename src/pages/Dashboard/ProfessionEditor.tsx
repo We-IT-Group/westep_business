@@ -17,6 +17,7 @@ import {
     useCreateProfession,
     useDeleteProfession,
     useGetProfessionFields,
+    useGetProfession,
     useGetProfessions,
     useSetProfessionActive,
     useSyncProfessionCourses,
@@ -81,6 +82,8 @@ export default function ProfessionEditor() {
 
     const {data: professionsData, isLoading: isProfessionsLoading} = useGetProfessions(canManageProfessions);
     const {data: fieldsData, isLoading: isFieldsLoading} = useGetProfessionFields(canManageProfessions);
+    // Tahrirda to'liq ma'lumot (tarjimalar, moslik profili, tavsiya yoshi) faqat detail endpointda bor
+    const {data: professionDetail, isLoading: isDetailLoading} = useGetProfession(canManageProfessions ? id : undefined);
     const {data: coursesData} = useGetBusinessCourses(canManageProfessions);
 
     const createProfessionMut = useCreateProfession();
@@ -100,8 +103,8 @@ export default function ProfessionEditor() {
     );
 
     const existingProfession = useMemo(
-        () => (id ? professions.find((item) => item.id === id) ?? null : null),
-        [id, professions],
+        () => (id ? professionDetail ?? null : null),
+        [id, professionDetail],
     );
 
     const initialTabParam = searchParams.get("tab");
@@ -112,7 +115,8 @@ export default function ProfessionEditor() {
     const [isDraftReady, setIsDraftReady] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
-    const isDataLoading = isUserLoading || (canManageProfessions && (isProfessionsLoading || isFieldsLoading));
+    const isDataLoading =
+        isUserLoading || (canManageProfessions && (isProfessionsLoading || isFieldsLoading || (isEditMode && isDetailLoading)));
 
     useEffect(() => {
         if (isDraftReady || isDataLoading || !canManageProfessions) {
