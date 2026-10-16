@@ -237,6 +237,7 @@ export interface Profession {
     recommendedFromAge?: number | null;
     /** Kasbga moslik profili: Holland kodi (masalan "ISR"), kuchli tomonlar, qadriyatlar */
     hollandCode?: string | null;
+    subjectKeys?: string[];
     strengthKeys?: string[];
     valueKeys?: string[];
     active: boolean;

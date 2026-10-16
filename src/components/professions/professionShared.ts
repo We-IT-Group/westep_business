@@ -34,6 +34,7 @@ export type ProfessionDraft = {
     displayOrder: number;
     recommendedFromAge: number | null;
     hollandCode: string;
+    subjectKeys: string[];
     strengthKeys: string[];
     valueKeys: string[];
     active: boolean;
@@ -115,6 +116,7 @@ export const createEmptyDraft = (fields: FieldOption[], nextOrder: number): Prof
     displayOrder: nextOrder,
     recommendedFromAge: null,
     hollandCode: "",
+    subjectKeys: [],
     strengthKeys: [],
     valueKeys: [],
     active: true,
@@ -138,6 +140,7 @@ export const cloneDraft = (profession: Profession): ProfessionDraft => ({
     displayOrder: profession.displayOrder,
     recommendedFromAge: profession.recommendedFromAge ?? null,
     hollandCode: profession.hollandCode ?? "",
+    subjectKeys: profession.subjectKeys ?? [],
     strengthKeys: profession.strengthKeys ?? [],
     valueKeys: profession.valueKeys ?? [],
     active: profession.active,
@@ -208,6 +211,27 @@ export const HOLLAND_LETTERS: Array<{ key: string; label: string }> = [
     { key: "S", label: "S — Odamlarga yordam" },
     { key: "E", label: "E — Yetakchilik" },
     { key: "C", label: "C — Tartib" },
+];
+
+export const SUBJECT_OPTIONS: Array<{ key: string; label: string }> = [
+    { key: "subject.biology", label: "🧬 Biologiya" },
+    { key: "subject.chemistry", label: "⚗️ Kimyo" },
+    { key: "subject.physics", label: "🧲 Fizika" },
+    { key: "subject.math", label: "➗ Matematika" },
+    { key: "subject.languages", label: "🗣️ Chet tillari" },
+    { key: "subject.history", label: "📜 Tarix" },
+    { key: "subject.informatics", label: "💻 Informatika" },
+    { key: "subject.economics", label: "📈 Iqtisod" },
+    { key: "subject.geography", label: "🌍 Geografiya" },
+    { key: "subject.literature", label: "📖 Ona tili va adabiyot" },
+    { key: "field.medicine", label: "🩺 Tibbiyot" },
+    { key: "field.engineering", label: "🏗️ Muhandislik" },
+    { key: "field.it", label: "👩‍💻 IT" },
+    { key: "field.law", label: "⚖️ Huquq" },
+    { key: "field.business", label: "💼 Biznes" },
+    { key: "field.education", label: "👩‍🏫 Ta'lim" },
+    { key: "field.arts", label: "🎨 San'at va dizayn" },
+    { key: "field.science", label: "🔬 Ilm-fan" },
 ];
 
 export const STRENGTH_OPTIONS: Array<{ key: string; label: string }> = [

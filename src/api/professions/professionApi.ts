@@ -24,6 +24,7 @@ export type ProfessionCreateRequest = {
     displayOrder?: number;
     recommendedFromAge?: number | null;
     hollandCode?: string | null;
+    subjectKeys?: string[];
     strengthKeys?: string[];
     valueKeys?: string[];
     translations: ProfessionTranslationPayload[];
@@ -200,6 +201,7 @@ const normalizeProfession = (value: unknown): Profession | null => {
         displayOrder: asNumber(record.displayOrder),
         recommendedFromAge: typeof record.recommendedFromAge === "number" ? record.recommendedFromAge : null,
         hollandCode: typeof record.hollandCode === "string" ? record.hollandCode : null,
+        subjectKeys: Array.isArray(record.subjectKeys) ? (record.subjectKeys as string[]) : [],
         strengthKeys: Array.isArray(record.strengthKeys) ? (record.strengthKeys as string[]) : [],
         valueKeys: Array.isArray(record.valueKeys) ? (record.valueKeys as string[]) : [],
         active: Boolean(record.active ?? true),

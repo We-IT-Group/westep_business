@@ -41,6 +41,7 @@ import {
     createEmptyDraft,
     HOLLAND_LETTERS,
     STRENGTH_OPTIONS,
+    SUBJECT_OPTIONS,
     VALUE_OPTIONS,
     getFieldMeta,
     getToneMeta,
@@ -224,6 +225,7 @@ export default function ProfessionEditor() {
             displayOrder: draft.displayOrder,
             recommendedFromAge: draft.recommendedFromAge,
             hollandCode: draft.hollandCode || null,
+            subjectKeys: draft.subjectKeys,
             strengthKeys: draft.strengthKeys,
             valueKeys: draft.valueKeys,
             translations,
@@ -608,6 +610,13 @@ export default function ProfessionEditor() {
                                         max={3}
                                         ordered
                                         onChange={(next) => setDraft((current) => ({ ...current, hollandCode: next.join("") }))}
+                                    />
+                                    <ChipPicker
+                                        label="Asosiy fan va sohalar — ko'pi bilan 4 ta (moslikda eng katta ulush)"
+                                        options={SUBJECT_OPTIONS}
+                                        selected={draft.subjectKeys}
+                                        max={4}
+                                        onChange={(next) => setDraft((current) => ({ ...current, subjectKeys: next }))}
                                     />
                                     <ChipPicker
                                         label="Kerakli kuchli tomonlar — ko'pi bilan 3 ta"
